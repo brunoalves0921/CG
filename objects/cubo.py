@@ -41,23 +41,34 @@ class Cube:
         self.scale_factors = [1, 1, 1]
         self.rotation_angles = [0, 0, 0]
         self.position = [0, 0, 0]  # Adiciona a posição inicial
+        self.selected = False  # Adiciona a variável de seleção
 
     def draw(self):
         glPushMatrix()
-        glTranslatef(*self.position)  # Aplica a translação
-        glScalef(*self.scale_factors)
+        
+        # Translade para a posição do cubo
+        glTranslatef(*self.position)
+
+        # Aplica as rotações no centro do cubo
         glRotatef(self.rotation_angles[0], 1, 0, 0)
         glRotatef(self.rotation_angles[1], 0, 1, 0)
         glRotatef(self.rotation_angles[2], 0, 0, 1)
 
-        glColor3f(0.5, 0.5, 0.5)  # Cor cinza para as faces do cubo
+        # Depois aplica a escala
+        glScalef(*self.scale_factors)
+        
+        if self.selected:
+            glColor3f(1.0, 0.5, 0.0)
+        else:
+            glColor3f(0.5, 0.5, 0.5)
+        
         glBegin(GL_QUADS)
         for face in Cube.faces:
             for vertex in face:
                 glVertex3fv(Cube.vertices[vertex])
         glEnd()
 
-        glColor3f(0, 0, 0)  # Cor preta para as arestas do cubo
+        glColor3f(0, 0, 0)
         glBegin(GL_LINES)
         for edge in Cube.edges:
             for vertex in edge:
@@ -89,4 +100,3 @@ class Cube:
             self.position[1] += distance
         elif axis == (0, 0, 1):
             self.position[2] += distance
-

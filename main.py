@@ -13,20 +13,17 @@ def main():
     pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
     gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)
     glTranslatef(0.0, 0.0, -5)
-    # Fundo branco
     glClearColor(1, 1, 1, 1)
-    glEnable(GL_DEPTH_TEST)  # Habilitar teste de profundidade
+    glEnable(GL_DEPTH_TEST)
 
     rotation = [0, 0]
     last_pos = None
-    zoom = -5  # Variável para controlar o zoom
+    zoom = -5
 
-    # Criar uma instância de Cube
     cube = Cube()
-    # model = OBJ('objects/Male.obj', swapyz=True, default_mtl=('objects/cube.mtl', 'Material'))
 
-    rotate_mode = False  # Variável para controlar o modo de rotação
-    translate_mode = False  # Variável para controlar o modo de translação
+    rotate_mode = False
+    translate_mode = False
 
     while True:
         ctrl_pressed = pygame.key.get_mods() & KMOD_CTRL
@@ -48,64 +45,64 @@ def main():
                 elif event.key == K_t:
                     translate_mode = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:  # Botão esquerdo do mouse
+                if event.button == 1:
                     last_pos = pygame.mouse.get_pos()
-                elif event.button == 4:  # Scroll para cima
+                elif event.button == 4:
                     if rotate_mode:
                         if ctrl_pressed:
-                            cube.rotate(5, (1, 0, 0))  # Rotaciona no eixo X
+                            cube.rotate(5, (1, 0, 0))
                         elif shift_pressed:
-                            cube.rotate(5, (0, 1, 0))  # Rotaciona no eixo Y
+                            cube.rotate(5, (0, 1, 0))
                         elif alt_pressed:
-                            cube.rotate(5, (0, 0, 1))  # Rotaciona no eixo Z
+                            cube.rotate(5, (0, 0, 1))
                     elif translate_mode:
                         if ctrl_pressed:
-                            cube.translate(0.1, (1, 0, 0))  # Translada no eixo X
+                            cube.translate(0.1, (1, 0, 0))
                         elif shift_pressed:
-                            cube.translate(0.1, (0, 1, 0))  # Translada no eixo Y
+                            cube.translate(0.1, (0, 1, 0))
                         elif alt_pressed:
-                            cube.translate(0.1, (0, 0, 1))  # Translada no eixo Z
+                            cube.translate(0.1, (0, 0, 1))
                     else:
-                        if ctrl_pressed and shift_pressed and alt_pressed: 
-                            cube.scale(0.05, (1, 0, 0))  # Escalona uniformemente
+                        if ctrl_pressed and shift_pressed and alt_pressed:
+                            cube.scale(0.05, (1, 0, 0))
                             cube.scale(0.05, (0, 1, 0))
                             cube.scale(0.05, (0, 0, 1))
                         elif ctrl_pressed:
-                            cube.scale(0.05, (1, 0, 0))  # Escalona no eixo X
+                            cube.scale(0.05, (1, 0, 0))
                         elif shift_pressed:
-                            cube.scale(0.05, (0, 1, 0))  # Escalona no eixo Y
+                            cube.scale(0.05, (0, 1, 0))
                         elif alt_pressed:
-                            cube.scale(0.05, (0, 0, 1))  # Escalona no eixo Z
+                            cube.scale(0.05, (0, 0, 1))
                         else:
-                            zoom += 0.5  # Aumentar zoom (aproximar)
-                elif event.button == 5:  # Scroll para baixo
+                            zoom += 0.5
+                elif event.button == 5:
                     if rotate_mode:
                         if ctrl_pressed:
-                            cube.rotate(-5, (1, 0, 0))  # Rotaciona no eixo X
+                            cube.rotate(-5, (1, 0, 0))
                         elif shift_pressed:
-                            cube.rotate(-5, (0, 1, 0))  # Rotaciona no eixo Y
+                            cube.rotate(-5, (0, 1, 0))
                         elif alt_pressed:
-                            cube.rotate(-5, (0, 0, 1))  # Rotaciona no eixo Z
+                            cube.rotate(-5, (0, 0, 1))
                     elif translate_mode:
                         if ctrl_pressed:
-                            cube.translate(-0.1, (1, 0, 0))  # Translada no eixo X
+                            cube.translate(-0.1, (1, 0, 0))
                         elif shift_pressed:
-                            cube.translate(-0.1, (0, 1, 0))  # Translada no eixo Y
+                            cube.translate(-0.1, (0, 1, 0))
                         elif alt_pressed:
-                            cube.translate(-0.1, (0, 0, 1))  # Translada no eixo Z
+                            cube.translate(-0.1, (0, 0, 1))
                     else:
                         if ctrl_pressed and shift_pressed and alt_pressed:
-                            cube.scale(-0.05, (1, 0, 0))  # Escalona uniformemente
+                            cube.scale(-0.05, (1, 0, 0))
                             cube.scale(-0.05, (0, 1, 0))
                             cube.scale(-0.05, (0, 0, 1))
                         elif ctrl_pressed:
-                            cube.scale(-0.05, (1, 0, 0))  # Escalona no eixo X
+                            cube.scale(-0.05, (1, 0, 0))
                         elif shift_pressed:
-                            cube.scale(-0.05, (0, 1, 0))  # Escalona no eixo Y
+                            cube.scale(-0.05, (0, 1, 0))
                         elif alt_pressed:
-                            cube.scale(-0.05, (0, 0, 1))  # Escalona no eixo Z
+                            cube.scale(-0.05, (0, 0, 1))
                         else:
-                            zoom -= 0.5  # Diminuir zoom (afastar)
+                            zoom -= 0.5
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     last_pos = None
@@ -125,9 +122,8 @@ def main():
         glPushMatrix()
         glRotatef(rotation[0], 1, 0, 0)
         glRotatef(rotation[1], 0, 1, 0)
-        draw_axes()  # Desenhar o plano cartesiano
-        cube.draw()  # Desenhar o cubo
-        # model.render() #RENDERIZAR O OBJETO
+        draw_axes()
+        cube.draw()
         glPopMatrix()
         pygame.display.flip()
         pygame.time.wait(10)
