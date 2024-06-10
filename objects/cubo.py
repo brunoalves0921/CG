@@ -1,5 +1,6 @@
 from OpenGL.GL import *
 from OpenGL.GLU import *
+import numpy as np
 
 class Cube:
     vertices = (
@@ -40,34 +41,34 @@ class Cube:
     def __init__(self):
         self.scale_factors = [1, 1, 1]
         self.rotation_angles = [0, 0, 0]
-        self.position = [0, 0, 0]  # Adiciona a posição inicial
-        self.selected = False  # Adiciona a variável de seleção
+        self.position = [0, 0, 0]
+        self.selected = False
 
     def draw(self):
+        """
+        Função para desenhar o cubo.
+        """
         glPushMatrix()
-        
-        # Translade para a posição do cubo
         glTranslatef(*self.position)
-
-        # Aplica as rotações no centro do cubo
+        glScalef(*self.scale_factors)
         glRotatef(self.rotation_angles[0], 1, 0, 0)
         glRotatef(self.rotation_angles[1], 0, 1, 0)
         glRotatef(self.rotation_angles[2], 0, 0, 1)
 
-        # Depois aplica a escala
-        glScalef(*self.scale_factors)
-        
+        # Definir cor do cubo se selecionado ou não
         if self.selected:
             glColor3f(1.0, 0.5, 0.0)
         else:
             glColor3f(0.5, 0.5, 0.5)
         
+        # Desenhar faces do cubo
         glBegin(GL_QUADS)
         for face in Cube.faces:
             for vertex in face:
                 glVertex3fv(Cube.vertices[vertex])
         glEnd()
 
+        # Desenhar arestas do cubo
         glColor3f(0, 0, 0)
         glBegin(GL_LINES)
         for edge in Cube.edges:
@@ -78,6 +79,9 @@ class Cube:
         glPopMatrix()
 
     def rotate(self, angle, axis):
+        """
+        Função para rotacionar o cubo em torno de um eixo.
+        """
         if axis == (1, 0, 0):
             self.rotation_angles[0] += angle
         elif axis == (0, 1, 0):
@@ -86,17 +90,48 @@ class Cube:
             self.rotation_angles[2] += angle
 
     def scale(self, factor, axis):
+        """
+        Função para escalar o cubo em um eixo específico.
+        """
         if axis == (1, 0, 0):
-            self.scale_factors[0] += factor
+            self.scale_factors[0] = max(0.1, self.scale_factors[0] + factor)
         elif axis == (0, 1, 0):
-            self.scale_factors[1] += factor
+            self.scale_factors[1] = max(0.1, self.scale_factors[1] + factor)
         elif axis == (0, 0, 1):
-            self.scale_factors[2] += factor
+            self.scale_factors[2] = max(0.1, self.scale_factors[2] + factor)
 
     def translate(self, distance, axis):
+        """
+        Função para transladar o cubo em um eixo específico.
+        """
         if axis == (1, 0, 0):
             self.position[0] += distance
         elif axis == (0, 1, 0):
             self.position[1] += distance
         elif axis == (0, 0, 1):
             self.position[2] += distance
+
+    def intersects(self, ray_origin, ray_direction):
+        """
+        Função para verificar se um raio intersecta o cubo.
+        """
+        # Ajustar os limites para considerar a posição e escala do cubo
+        min_bounds = np.array(self.position) - np.array(self.scale_factors)
+        max_bounds = np.array(self.position) + np.array(self.scale_factors)
+
+        t_min = -np.inf
+        t_max = np.inf
+
+        for i in range(3):
+            if abs(ray_direction[i]) < 1e-8:
+                if ray_origin[i] < min_bounds[i] or ray_origin[i] > max_bounds[i]:
+                    return False
+            else:
+                t1 = (min_bounds[i] - ray_origin[i]) / ray_direction[i]
+                t2 = (max_bounds[i] - ray_origin[i]) / ray_direction[i]
+                t_min = max(t_min, min(t1, t2))
+                t_max = min(t_max, max(t1, t2))
+                if t_max < t_min:
+                    return False
+
+        return True
