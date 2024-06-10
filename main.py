@@ -38,7 +38,7 @@ def get_ray_from_mouse(x, y, display):
 
     return ray_origin, ray_direction
 
-def select_object(x, y, display, cube):
+def select_object(x, y, display, cubes):
     """
     Função para selecionar um objeto usando um raio a partir das coordenadas do mouse.
     """
@@ -66,8 +66,12 @@ def select_object(x, y, display, cube):
     glRotatef(rotation[0], 1, 0, 0)
     glRotatef(rotation[1], 0, 1, 0)
     draw_axes()
-    glLoadName(1)
-    cube.draw()
+
+    # Desenhar todos os cubos para seleção
+    for i, cube in enumerate(cubes):
+        glLoadName(i + 1)
+        cube.draw()
+    
     glPopMatrix()
 
     glMatrixMode(GL_PROJECTION)
@@ -93,8 +97,10 @@ def main():
     last_pos = None
     zoom = -5
 
-    cube = Cube()
-    cube2 = Cube()
+    # Criação de uma lista de cubos
+    cubes = [Cube(), Cube(), Cube()]
+    cubes[1].position = [3, 0, 0]
+    cubes[2].position = [-3, 0, 0]
 
     rotate_mode = False
     translate_mode = False
@@ -122,72 +128,77 @@ def main():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     x, y = pygame.mouse.get_pos()
-                    hits = select_object(x, y, display, cube)
+                    hits = select_object(x, y, display, cubes)
                     if hits:
-                        cube.selected = not cube.selected
+                        selected_cube_index = hits[0][2][0] - 1
+                        cubes[selected_cube_index].selected = not cubes[selected_cube_index].selected
                     last_pos = pygame.mouse.get_pos()
-                elif event.button == 4:
-                    # Verificar modos de rotação e translação com o cubo selecionado
-                    if rotate_mode and cube.selected:
-                        if ctrl_pressed:
-                            cube.rotate(5, (1, 0, 0))
-                        elif shift_pressed:
-                            cube.rotate(5, (0, 1, 0))
-                        elif alt_pressed:
-                            cube.rotate(5, (0, 0, 1))
-                    elif translate_mode and cube.selected:
-                        if ctrl_pressed:
-                            cube.translate(0.1, (1, 0, 0))
-                        elif shift_pressed:
-                            cube.translate(0.1, (0, 1, 0))
-                        elif alt_pressed:
-                            cube.translate(0.1, (0, 0, 1))
+                elif event.button == 4:  # Scroll up
+                    if any(cube.selected for cube in cubes):
+                        for cube in cubes:
+                            if cube.selected:
+                                if ctrl_pressed and shift_pressed and alt_pressed:
+                                    cube.scale(0.05, (1, 0, 0))
+                                    cube.scale(0.05, (0, 1, 0))
+                                    cube.scale(0.05, (0, 0, 1))
+                                elif ctrl_pressed:
+                                    if rotate_mode:
+                                        cube.rotate(-5, (1, 0, 0))
+                                    elif translate_mode:
+                                        cube.translate(0.1, (1, 0, 0))
+                                    else:
+                                        cube.scale(0.05, (1, 0, 0))
+                                elif shift_pressed:
+                                    if rotate_mode:
+                                        cube.rotate(-5, (0, 1, 0))
+                                    elif translate_mode:
+                                        cube.translate(0.1, (0, 1, 0))
+                                    else:
+                                        cube.scale(0.05, (0, 1, 0))
+                                elif alt_pressed:
+                                    if rotate_mode:
+                                        cube.rotate(-5, (0, 0, 1))
+                                    elif translate_mode:
+                                        cube.translate(0.1, (0, 0, 1))
+                                    else:
+                                        cube.scale(0.05, (0, 0, 1))
+                                else:
+                                    cube.scale(0.05, (1, 1, 1))
                     else:
-                        # Verificar modo de escala com o cubo selecionado
-                        if cube.selected:
-                            if ctrl_pressed and shift_pressed and alt_pressed:
-                                cube.scale(0.05, (1, 0, 0))
-                                cube.scale(0.05, (0, 1, 0))
-                                cube.scale(0.05, (0, 0, 1))
-                            elif ctrl_pressed:
-                                cube.scale(0.05, (1, 0, 0))
-                            elif shift_pressed:
-                                cube.scale(0.05, (0, 1, 0))
-                            elif alt_pressed:
-                                cube.scale(0.05, (0, 0, 1))
-                        else:
-                            zoom += 0.5
-                elif event.button == 5:
-                    # Verificar modos de rotação e translação com o cubo selecionado
-                    if rotate_mode and cube.selected:
-                        if ctrl_pressed:
-                            cube.rotate(-5, (1, 0, 0))
-                        elif shift_pressed:
-                            cube.rotate(-5, (0, 1, 0))
-                        elif alt_pressed:
-                            cube.rotate(-5, (0, 0, 1))
-                    elif translate_mode and cube.selected:
-                        if ctrl_pressed:
-                            cube.translate(-0.1, (1, 0, 0))
-                        elif shift_pressed:
-                            cube.translate(-0.1, (0, 1, 0))
-                        elif alt_pressed:
-                            cube.translate(-0.1, (0, 0, 1))
+                        zoom += 0.5
+                elif event.button == 5:  # Scroll down
+                    if any(cube.selected for cube in cubes):
+                        for cube in cubes:
+                            if cube.selected:
+                                if ctrl_pressed and shift_pressed and alt_pressed:
+                                    cube.scale(-0.05, (1, 0, 0))
+                                    cube.scale(-0.05, (0, 1, 0))
+                                    cube.scale(-0.05, (0, 0, 1))
+                                elif ctrl_pressed:
+                                    if rotate_mode:
+                                        cube.rotate(5, (1, 0, 0))
+                                    elif translate_mode:
+                                        cube.translate(-0.1, (1, 0, 0))
+                                    else:
+                                        cube.scale(-0.05, (1, 0, 0))
+                                elif shift_pressed:
+                                    if rotate_mode:
+                                        cube.rotate(5, (0, 1, 0))
+                                    elif translate_mode:
+                                        cube.translate(-0.1, (0, 1, 0))
+                                    else:
+                                        cube.scale(-0.05, (0, 1, 0))
+                                elif alt_pressed:
+                                    if rotate_mode:
+                                        cube.rotate(5, (0, 0, 1))
+                                    elif translate_mode:
+                                        cube.translate(-0.1, (0, 0, 1))
+                                    else:
+                                        cube.scale(-0.05, (0, 0, 1))
+                                else:
+                                    cube.scale(-0.05, (1, 1, 1))
                     else:
-                        # Verificar modo de escala com o cubo selecionado
-                        if cube.selected:
-                            if ctrl_pressed and shift_pressed and alt_pressed:
-                                cube.scale(-0.05, (1, 0, 0))
-                                cube.scale(-0.05, (0, 1, 0))
-                                cube.scale(-0.05, (0, 0, 1))
-                            elif ctrl_pressed:
-                                cube.scale(-0.05, (1, 0, 0))
-                            elif shift_pressed:
-                                cube.scale(-0.05, (0, 1, 0))
-                            elif alt_pressed:
-                                cube.scale(-0.05, (0, 0, 1))
-                        else:
-                            zoom -= 0.5
+                        zoom -= 0.5
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     last_pos = None
@@ -209,9 +220,11 @@ def main():
         glRotatef(rotation[0], 1, 0, 0)
         glRotatef(rotation[1], 0, 1, 0)
         draw_axes()
-        cube.draw() #cubo 1
-        cube2.draw()
-        cube2.position = [3, 0, 0]
+
+        # Desenhar todos os cubos
+        for cube in cubes:
+            cube.draw()
+
         glPopMatrix()
         pygame.display.flip()
         pygame.time.wait(10)
