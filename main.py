@@ -131,7 +131,14 @@ def main():
                     hits = select_object(x, y, display, cubes)
                     if hits:
                         selected_cube_index = hits[0][2][0] - 1
-                        cubes[selected_cube_index].selected = not cubes[selected_cube_index].selected
+                        if cubes[selected_cube_index].selected:
+                            cubes[selected_cube_index].selected = False
+                        else:
+                            if not shift_pressed:
+                                # Desselcionar todos os cubos antes de selecionar o novo, exceto se Shift estiver pressionado
+                                for cube in cubes:
+                                    cube.selected = False
+                            cubes[selected_cube_index].selected = True
                     last_pos = pygame.mouse.get_pos()
                 elif event.button == 4:  # Scroll up
                     if any(cube.selected for cube in cubes):
