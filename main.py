@@ -80,7 +80,10 @@ def select_object(x, y, display, cubes):
     glFlush()
 
     hits = glRenderMode(GL_RENDER)
-    return hits
+    if hits > 0:
+        return select_buffer[:hits * 4]
+    else:
+        return []
 
 def main():
     # Inicialização do Pygame e configuração da janela
@@ -129,8 +132,9 @@ def main():
                 if event.button == 1:
                     x, y = pygame.mouse.get_pos()
                     hits = select_object(x, y, display, cubes)
-                    if hits:
-                        selected_cube_index = hits[0][2][0] - 1
+                    if len(hits) > 0:
+                        # Obter o índice do cubo selecionado
+                        selected_cube_index = hits[3] - 1
                         if cubes[selected_cube_index].selected:
                             cubes[selected_cube_index].selected = False
                         else:
