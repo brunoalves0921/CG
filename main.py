@@ -7,7 +7,7 @@ import numpy as np
 from objects.cubo import Cube
 from objects.eixos import draw_axes
 
-def get_ray_from_mouse(x, y, display):
+def get_ray_from_mouse(x, y, display, camera_pos, rotation):
     """
     Função para calcular um raio a partir das coordenadas do mouse.
     """
@@ -25,6 +25,27 @@ def get_ray_from_mouse(x, y, display):
     inverse_projection_matrix = np.linalg.inv(projection_matrix)
     inverse_view_matrix = np.linalg.inv(view_matrix)
 
+    # Aplicar a transformação da câmera
+    translation_matrix = np.array([
+        [1, 0, 0, camera_pos[0]],
+        [0, 1, 0, camera_pos[1]],
+        [0, 0, 1, camera_pos[2]],
+        [0, 0, 0, 1]
+    ])
+    rotation_x_matrix = np.array([
+        [1, 0, 0, 0],
+        [0, np.cos(np.radians(rotation[0])), -np.sin(np.radians(rotation[0])), 0],
+        [0, np.sin(np.radians(rotation[0])), np.cos(np.radians(rotation[0])), 0],
+        [0, 0, 0, 1]
+    ])
+    rotation_y_matrix = np.array([
+        [np.cos(np.radians(rotation[1])), 0, np.sin(np.radians(rotation[1])), 0],
+        [0, 1, 0, 0],
+        [-np.sin(np.radians(rotation[1])), 0, np.cos(np.radians(rotation[1])), 0],
+        [0, 0, 0, 1]
+    ])
+    camera_matrix = np.dot(translation_matrix, np.dot(rotation_x_matrix, rotation_y_matrix))
+
     # Transformar as coordenadas do raio do espaço de recorte para o espaço mundial
     ray_clip = np.dot(inverse_projection_matrix, ray_ndc)
     ray_clip = ray_clip / ray_clip[3]
@@ -36,9 +57,13 @@ def get_ray_from_mouse(x, y, display):
     ray_direction = ray_world[:3] - ray_origin
     ray_direction = ray_direction / np.linalg.norm(ray_direction)
 
+    # Aplicar a transformação inversa da câmera ao raio
+    ray_origin = np.dot(camera_matrix, np.append(ray_origin, 1))[:3]
+    ray_direction = np.dot(camera_matrix[:3, :3], ray_direction)
+
     return ray_origin, ray_direction
 
-def select_object(x, y, display, cubes):
+def select_object(x, y, display, cubes, camera_pos, rotation):
     """
     Função para selecionar um objeto usando um raio a partir das coordenadas do mouse.
     """
@@ -61,7 +86,7 @@ def select_object(x, y, display, cubes):
 
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    glTranslatef(0.0, 0.0, zoom)
+    glTranslatef(camera_pos[0], camera_pos[1], zoom)
     glPushMatrix()
     glRotatef(rotation[0], 1, 0, 0)
     glRotatef(rotation[1], 0, 1, 0)
@@ -88,17 +113,18 @@ def select_object(x, y, display, cubes):
 def main():
     # Inicialização do Pygame e configuração da janela
     pygame.init()
-    display = (1280, 960)
+    display = (1280, 720)
     pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
     gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)
     glTranslatef(0.0, 0.0, -5)
     glClearColor(1, 1, 1, 1)
     glEnable(GL_DEPTH_TEST)
 
-    global rotation, last_pos, zoom
+    global rotation, last_pos, zoom, camera_pos
     rotation = [0, 0]
     last_pos = None
     zoom = -5
+    camera_pos = [0, 0, 0]
 
     # Criação de uma lista de cubos
     cubes = [Cube(), Cube(), Cube()]
@@ -131,7 +157,7 @@ def main():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     x, y = pygame.mouse.get_pos()
-                    hits = select_object(x, y, display, cubes)
+                    hits = select_object(x, y, display, cubes, camera_pos, rotation)
                     if len(hits) > 0:
                         # Obter o índice do cubo selecionado
                         selected_cube_index = hits[3] - 1
@@ -143,6 +169,8 @@ def main():
                                 for cube in cubes:
                                     cube.selected = False
                             cubes[selected_cube_index].selected = True
+                    last_pos = pygame.mouse.get_pos()
+                elif event.button == 3:
                     last_pos = pygame.mouse.get_pos()
                 elif event.button == 4:  # Scroll up
                     if any(cube.selected for cube in cubes):
@@ -211,22 +239,26 @@ def main():
                     else:
                         zoom -= 0.5
             elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1:
+                if event.button == 1 or event.button == 3:
                     last_pos = None
             elif event.type == pygame.MOUSEMOTION:
                 if last_pos:
                     x, y = pygame.mouse.get_pos()
                     dx = x - last_pos[0]
                     dy = y - last_pos[1]
-                    rotation[0] += dy
-                    rotation[1] += dx
+                    if event.buttons[2]:  # Botão direito do mouse
+                        camera_pos[0] += dx * 0.01
+                        camera_pos[1] -= dy * 0.01
+                    else:  # Botão esquerdo do mouse
+                        rotation[0] += dy
+                        rotation[1] += dx
                     last_pos = (x, y)
 
         # Limpar o buffer de cor e profundidade
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
         gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)
-        glTranslatef(0.0, 0.0, zoom)
+        glTranslatef(camera_pos[0], camera_pos[1], zoom)
         glPushMatrix()
         glRotatef(rotation[0], 1, 0, 0)
         glRotatef(rotation[1], 0, 1, 0)

@@ -87,11 +87,11 @@ class Cube:
 
     def scale(self, factor, axis): #Função para escalar o cubo em um eixo específico.
         if axis == (1, 0, 0):
-            self.scale_factors[0] = max(0.1, self.scale_factors[0] + factor)
+            self.scale_factors[0] = max(0.001, self.scale_factors[0] + factor)
         elif axis == (0, 1, 0):
-            self.scale_factors[1] = max(0.1, self.scale_factors[1] + factor)
+            self.scale_factors[1] = max(0.001, self.scale_factors[1] + factor)
         elif axis == (0, 0, 1):
-            self.scale_factors[2] = max(0.1, self.scale_factors[2] + factor)
+            self.scale_factors[2] = max(0.001, self.scale_factors[2] + factor)
 
     def translate(self, distance, axis): #Função para transladar o cubo em um eixo específico.
         if axis == (1, 0, 0):
