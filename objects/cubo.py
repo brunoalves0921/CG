@@ -4,7 +4,7 @@ from OpenGL.GLU import *
 import numpy as np
 
 class Cube(Object):
-    vertices = (
+    base_vertices = (
         (1, -1, -1),  # 0
         (1, 1, -1),
         (-1, 1, -1),
@@ -42,6 +42,7 @@ class Cube(Object):
     def __init__(self):
         super().__init__([0, 0, 0])
         self.selected = False
+        self.vertices = [list(vertex) for vertex in Cube.base_vertices]  # Converter para listas mutáveis
 
     def draw(self): #Função para desenhar o cubo.
         glPushMatrix()
@@ -63,7 +64,7 @@ class Cube(Object):
         glBegin(GL_QUADS)
         for face in Cube.faces:
             for vertex in face:
-                glVertex3fv(Cube.vertices[vertex])
+                glVertex3fv(self.vertices[vertex])
         glEnd()
 
         # Desenhar arestas do cubo
@@ -71,7 +72,7 @@ class Cube(Object):
         glBegin(GL_LINES)
         for edge in Cube.edges:
             for vertex in edge:
-                glVertex3fv(Cube.vertices[vertex])
+                glVertex3fv(self.vertices[vertex])
         glEnd()
 
         glPopMatrix()
@@ -99,3 +100,29 @@ class Cube(Object):
             self.position[1] += distance
         elif axis == (0, 0, 1):
             self.position[2] += distance
+
+    def shear(self, shear_factor, plane): #Função para aplicar cisalhamento ao cubo.
+        shear_matrix = np.identity(4)
+        if plane == 'xy':
+            shear_matrix[0][1] = shear_factor  # Shear X based on Y
+        elif plane == 'yx':
+            shear_matrix[1][0] = shear_factor # Shear Y based on X
+        elif plane == 'xz':
+            shear_matrix[0][2] = shear_factor
+        elif plane == 'zx':
+            shear_matrix[2][0] = shear_factor
+
+        # Apply shear only to the vertices that are not fixed
+        new_vertices = []
+        for vertex in self.vertices:
+            v = np.array(vertex + [1])
+            # Apply shear to the vertices on the positive side of the fixed plane
+            if (plane in ['xy', 'xz'] and vertex[1] >= 0) or \
+               (plane in ['yx', 'yz'] and vertex[0] >= 0) or \
+               (plane in ['zx', 'zy'] and vertex[2] >= 0):
+                v_new = shear_matrix @ v
+                new_vertices.append(list(v_new[:3]))
+            else:
+                new_vertices.append(vertex)
+        
+        self.vertices = new_vertices

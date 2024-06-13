@@ -1,9 +1,9 @@
 import pygame
 from utils.camera import Camera
 from utils.event_listener import EventListener
-from objects import Object, Cube
+from objects import Object, Cube, Sphere
 from objects.eixos import draw_axes
-from pygame.locals import DOUBLEBUF, OPENGL, KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t
+from pygame.locals import DOUBLEBUF, OPENGL
 from OpenGL.GL import *
 from OpenGL.GLU import gluPerspective, gluPickMatrix
 
@@ -22,10 +22,11 @@ class Scene:
 
         self.camera = Camera()
 
-        # Criação de uma lista de cubos
-        self.objects = [Cube(), Cube(), Cube()]
+        # Criação de uma lista de objetos (cubos e esferas)
+        self.objects = [Cube(), Cube(), Cube(), Sphere()]
         self.objects[1].position = [3, 0, 0]
         self.objects[2].position = [-3, 0, 0]
+        self.objects[3].position = [0, 3, 0]  # Adiciona uma esfera
 
         self.eventListener = EventListener(self)
     
@@ -46,9 +47,9 @@ class Scene:
         glRotatef(self.camera.rotation[1], 0, 1, 0)
         draw_axes()
 
-        # Desenhar todos os cubos
-        for cube in self.objects:
-            cube.draw()
+        # Desenhar todos os objetos
+        for obj in self.objects:
+            obj.draw()
 
         glPopMatrix()
         pygame.display.flip()
@@ -83,10 +84,10 @@ class Scene:
         glRotatef(self.camera.rotation[1], 0, 1, 0)
         draw_axes()
 
-        # Desenhar todos os cubos para seleção
-        for i, cube in enumerate(self.objects):
+        # Desenhar todos os objetos para seleção
+        for i, obj in enumerate(self.objects):
             glLoadName(i + 1)
-            cube.draw()
+            obj.draw()
         
         glPopMatrix()
 
