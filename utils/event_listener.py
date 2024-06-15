@@ -1,5 +1,5 @@
 import pygame
-from pygame.locals import KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t, K_c, K_F1, K_F2, K_F3, K_F4, K_F5, K_o
+from pygame.locals import KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t, K_c, K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_o
 from OpenGL.GL import *
 
 class EventListener:
@@ -52,6 +52,11 @@ class EventListener:
                         self.scene.overview_camera.set_preset_position(5)
                     else:
                         self.scene.camera.set_preset_position(5)
+                elif event.key == K_F6:
+                    if self.scene.show_overview:
+                        self.scene.overview_camera.set_preset_position(6)
+                    else:
+                        self.scene.camera.set_preset_position(6)
                 elif event.key == K_o:
                     self.scene.show_overview = not self.scene.show_overview  # Alterna o estado do overview
                     self.overview_active = self.scene.show_overview  # Atualiza o estado do flag para o overview ativo

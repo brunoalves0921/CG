@@ -14,18 +14,23 @@ class Camera:
             # Posição lateral direita, olhando para a origem
             self.position = [0, 0, -5]  
             self.rotation = [0, -90] 
-            self.zoom = -20  
+            self.zoom = -20
         elif preset == 3:
             # Posição lateral direita, olhando para a origem
             self.position = [0, 0, -5]
             self.rotation = [0, 180]  
             self.zoom = -20  
         elif preset == 4:
+            # Posição lateral esquerda, olhando para a origem
+            self.position = [0, 0, -5]  
+            self.rotation = [0, 90] 
+            self.zoom = -20  
+        elif preset == 5:
             # Posição superior, olhando para a origem
             self.position = [0, 0, 0]  
             self.rotation = [90, 0] 
             self.zoom = -20
-        elif preset == 5:
+        elif preset == 6:
             # Posição inferior, olhando para a origem
             self.position = [0, 0, -5]  
             self.rotation = [-90, 0] 
