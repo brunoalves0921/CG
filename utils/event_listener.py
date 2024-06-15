@@ -9,6 +9,7 @@ class EventListener:
         self.rotate_mode = False
         self.translate_mode = False
         self.shear_mode = False
+        self.overview_active = False  # Adicionamos um flag para controlar se o overview está ativo
     
     def run(self):
         ctrl_pressed = pygame.key.get_mods() & KMOD_CTRL
@@ -53,6 +54,7 @@ class EventListener:
                         self.scene.camera.set_preset_position(5)
                 elif event.key == K_o:
                     self.scene.show_overview = not self.scene.show_overview  # Alterna o estado do overview
+                    self.overview_active = self.scene.show_overview  # Atualiza o estado do flag para o overview ativo
             elif event.type == pygame.KEYUP:
                 if event.key == K_r:
                     self.rotate_mode = False
@@ -120,10 +122,7 @@ class EventListener:
                                         if obj.transform.scale[2] + value_scale >= min_scale:
                                             obj.scale(value_scale, (0, 0, 1))
                     else:
-                        if self.scene.show_overview:
-                            self.scene.overview_camera.zoom += 0.5 * direction
-                        else:
-                            self.scene.camera.zoom += 0.5 * direction
+                        self.scene.camera.zoom += 0.5 * direction  # Ajusta o zoom da câmera principal
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1 or event.button == 3:
                     self.last_pos = None
@@ -133,17 +132,9 @@ class EventListener:
                     dx = x - self.last_pos[0]
                     dy = y - self.last_pos[1]
                     if event.buttons[2]:  # Botão direito do mouse
-                        if self.scene.show_overview:
-                            self.scene.overview_camera.position[0] += dx * 0.01
-                            self.scene.overview_camera.position[1] -= dy * 0.01
-                        else:
-                            self.scene.camera.position[0] += dx * 0.01
-                            self.scene.camera.position[1] -= dy * 0.01
+                        self.scene.camera.position[0] += dx * 0.01
+                        self.scene.camera.position[1] -= dy * 0.01
                     else:  # Botão esquerdo do mouse
-                        if self.scene.show_overview:
-                            self.scene.overview_camera.rotation[0] += dy
-                            self.scene.overview_camera.rotation[1] += dx
-                        else:
-                            self.scene.camera.rotation[0] += dy
-                            self.scene.camera.rotation[1] += dx
+                        self.scene.camera.rotation[0] += dy
+                        self.scene.camera.rotation[1] += dx
                     self.last_pos = (x, y)
