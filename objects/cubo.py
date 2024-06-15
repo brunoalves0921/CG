@@ -1,6 +1,5 @@
 from objects import Object
 from OpenGL.GL import *
-from OpenGL.GLU import *
 import numpy as np
 
 class Cube(Object):
@@ -43,8 +42,9 @@ class Cube(Object):
         super().__init__([0, 0, 0])
         self.selected = False
         self.vertices = [list(vertex) for vertex in Cube.base_vertices]  # Converter para listas mutáveis
+        self.scale_factor = [1.0, 1.0, 1.0]  # Adicionar atributo para controle da escala
 
-    def draw(self): #Função para desenhar o cubo.
+    def draw(self):
         glPushMatrix()
         glTranslatef(*self.position)
         
@@ -52,7 +52,7 @@ class Cube(Object):
         glRotatef(self.transform.rotation[1], 0, 1, 0)
         glRotatef(self.transform.rotation[2], 0, 0, 1)
 
-        glScalef(*self.transform.scale)
+        glScalef(*self.scale_factor)  # Aplicar escala
         
         # Definir cor do cubo se selecionado ou não
         if self.selected:
@@ -77,7 +77,7 @@ class Cube(Object):
 
         glPopMatrix()
 
-    def rotate(self, angle, axis): #Função para rotacionar o cubo em um eixo específico.
+    def rotate(self, angle, axis):
         if axis == (1, 0, 0):
             self.transform.rotation[0] += angle
         elif axis == (0, 1, 0):
@@ -85,15 +85,19 @@ class Cube(Object):
         elif axis == (0, 0, 1):
             self.transform.rotation[2] += angle
 
-    def scale(self, factor, axis): #Função para escalar o cubo em um eixo específico.
+    def scale(self, factor, axis):
+        min_scale = 0.1
         if axis == (1, 0, 0):
-            self.transform.scale[0] = max(0.001, self.transform.scale[0] + factor)
+            new_scale = max(min_scale, self.scale_factor[0] + factor)
+            self.scale_factor[0] = new_scale
         elif axis == (0, 1, 0):
-            self.transform.scale[1] = max(0.001, self.transform.scale[1] + factor)
+            new_scale = max(min_scale, self.scale_factor[1] + factor)
+            self.scale_factor[1] = new_scale
         elif axis == (0, 0, 1):
-            self.transform.scale[2] = max(0.001, self.transform.scale[2] + factor)
+            new_scale = max(min_scale, self.scale_factor[2] + factor)
+            self.scale_factor[2] = new_scale
 
-    def translate(self, distance, axis): #Função para transladar o cubo em um eixo específico.
+    def translate(self, distance, axis):
         if axis == (1, 0, 0):
             self.position[0] += distance
         elif axis == (0, 1, 0):
@@ -101,22 +105,20 @@ class Cube(Object):
         elif axis == (0, 0, 1):
             self.position[2] += distance
 
-    def shear(self, shear_factor, plane): #Função para aplicar cisalhamento ao cubo.
+    def shear(self, shear_factor, plane):
         shear_matrix = np.identity(4)
         if plane == 'xy':
             shear_matrix[0][1] = shear_factor  # Shear X based on Y
         elif plane == 'yx':
-            shear_matrix[1][0] = shear_factor # Shear Y based on X
+            shear_matrix[1][0] = shear_factor  # Shear Y based on X
         elif plane == 'xz':
             shear_matrix[0][2] = shear_factor
         elif plane == 'zx':
             shear_matrix[2][0] = shear_factor
 
-        # Apply shear only to the vertices that are not fixed
         new_vertices = []
         for vertex in self.vertices:
             v = np.array(vertex + [1])
-            # Apply shear to the vertices on the positive side of the fixed plane
             if (plane in ['xy', 'xz'] and vertex[1] >= 0) or \
                (plane in ['yx', 'yz'] and vertex[0] >= 0) or \
                (plane in ['zx', 'zy'] and vertex[2] >= 0):
