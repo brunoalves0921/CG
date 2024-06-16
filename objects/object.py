@@ -17,3 +17,6 @@ class Object:
 
     def scale(self, factor, axis):
         pass
+
+    def shear(self, factor, axis):
+        pass
