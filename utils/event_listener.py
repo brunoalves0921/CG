@@ -9,7 +9,7 @@ class EventListener:
         self.rotate_mode = False
         self.translate_mode = False
         self.shear_mode = False
-        self.overview_active = False  # Flag to control overview state
+        self.overview_active = False 
     
     def run(self):
         mods = pygame.key.get_mods()
@@ -140,10 +140,10 @@ class EventListener:
         x, y = pygame.mouse.get_pos()
         dx = x - self.last_pos[0]
         dy = y - self.last_pos[1]
-        if event.buttons[2]:  # Right mouse button
+        if event.buttons[2]:  # Botão direito do mouse 
             self.scene.camera.position[0] += dx * 0.01
             self.scene.camera.position[1] -= dy * 0.01
-        else:  # Left mouse button
+        else:  # Botão esquerdo do mouse
             self.scene.camera.rotation[0] += dy
             self.scene.camera.rotation[1] += dx
         self.last_pos = (x, y)

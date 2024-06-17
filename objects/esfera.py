@@ -9,10 +9,14 @@ class Sphere(Object):
         self.selected = False
         self.radius = radius
         self.vertices, self.faces = self.create_sphere(radius, subdivisions)
-        self.vertex_buffer, self.index_buffer = self.setup_buffers()
+
+        # VBO IDs
+        self.vbo_vertices = glGenBuffers(1)
+        self.vbo_faces = glGenBuffers(1)
+
+        self.init_vbo()
 
     def create_sphere(self, radius, subdivisions):
-        # Criação do icosaedro inicial
         t = (1.0 + np.sqrt(5.0)) / 2.0
 
         vertices = [
@@ -28,10 +32,8 @@ class Sphere(Object):
             (4, 9, 5), (2, 4, 11), (6, 2, 10), (8, 6, 7), (9, 8, 1),
         ]
 
-        # Normalizar os vértices para que todos tenham comprimento igual ao raio
         vertices = [self.normalize(np.array(v), radius) for v in vertices]
 
-        # Subdivisão dos triângulos
         for _ in range(subdivisions):
             faces_subdivided = []
             midpoint_cache = {}
@@ -71,16 +73,14 @@ class Sphere(Object):
         midpoint_cache[key] = midpoint_index
         return midpoint_index
 
-    def setup_buffers(self):
-        vertex_buffer = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer)
+    def init_vbo(self):
+        # Upload vertices to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
         glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
 
-        index_buffer = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer)
+        # Upload faces to VBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.faces.nbytes, self.faces, GL_STATIC_DRAW)
-
-        return vertex_buffer, index_buffer
 
     def draw(self):
         glPushMatrix()
@@ -99,10 +99,10 @@ class Sphere(Object):
 
         glEnableClientState(GL_VERTEX_ARRAY)
         
-        glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buffer)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
         glVertexPointer(3, GL_FLOAT, 0, None)
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.index_buffer)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
         glDrawElements(GL_TRIANGLES, len(self.faces) * 3, GL_UNSIGNED_INT, None)
 
         glDisableClientState(GL_VERTEX_ARRAY)
@@ -134,4 +134,4 @@ class Sphere(Object):
             self.position[2] += distance
 
     def shear(self, shear_factor, plane):
-        pass  # O cisalhamento pode não ser significativo para esferas, mas pode ser implementado se necessário.
+        pass

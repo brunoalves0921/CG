@@ -3,15 +3,21 @@ from OpenGL.GL import *
 import numpy as np
 
 class Pyramid(Object):
-    def __init__(self, base_length=1, height=2):
+    def __init__(self, base_length=2, height=2):
         super().__init__([0, 0, 0])
         self.selected = False
         self.base_length = base_length
         self.height = height
         self.scale_factor = [1.0, 1.0, 1.0]
 
-        self.vertices = self.generate_vertices()
-        self.faces = self.generate_faces()
+        self.vertices = np.array(self.generate_vertices(), dtype=np.float32)
+        self.faces = np.array(self.generate_faces(), dtype=np.uint32)
+
+        # VBO IDs
+        self.vbo_vertices = glGenBuffers(1)
+        self.vbo_faces = glGenBuffers(1)
+
+        self.init_vbo()
 
     def generate_vertices(self):
         half_base = self.base_length / 2
@@ -30,9 +36,19 @@ class Pyramid(Object):
             (1, 2, 4),
             (2, 3, 4),
             (3, 0, 4),
-            (0, 1, 2, 3)  # Base face
+            (0, 1, 2),  # Base faces split into two triangles
+            (0, 2, 3)
         ]
         return faces
+
+    def init_vbo(self):
+        # Upload vertices to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
+        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
+
+        # Upload faces to VBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.faces.nbytes, self.faces, GL_STATIC_DRAW)
 
     def draw(self):
         glPushMatrix()
@@ -49,16 +65,22 @@ class Pyramid(Object):
         else:
             glColor3f(0.5, 0.5, 0.5)
         
-        glBegin(GL_TRIANGLES)
-        for face in self.faces[:-1]:  # Draw side faces
-            for vertex in face:
-                glVertex3fv(self.vertices[vertex])
-        glEnd()
+        # Desenhar faces da pirâmide
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
+        glVertexPointer(3, GL_FLOAT, 0, None)
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
         
-        glBegin(GL_QUADS)
-        for vertex in self.faces[-1]:  # Draw base face
-            glVertex3fv(self.vertices[vertex])
-        glEnd()
+        # Desenhar faces laterais (triângulos)
+        for i in range(4):
+            glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, ctypes.c_void_p(i * 3 * 4))
+        
+        # Desenhar faces da base (dois triângulos)
+        for i in range(4, 6):
+            glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, ctypes.c_void_p(i * 3 * 4))
+
+        glDisableClientState(GL_VERTEX_ARRAY)
 
         glPopMatrix()
 

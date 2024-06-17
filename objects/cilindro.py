@@ -11,13 +11,25 @@ class Cylinder(Object):
         self.slices = slices
         self.scale_factor = [1.0, 1.0, 1.0]
 
-        self.vertices, self.faces = self.generate_geometry()
+        self.vertices, self.side_faces, self.top_bottom_faces = self.generate_geometry()
+
+        # Convertendo os dados para numpy arrays
+        self.vertices = np.array(self.vertices, dtype=np.float32)
+        self.side_faces = np.array(self.side_faces, dtype=np.uint32)
+        self.top_bottom_faces = np.array(self.top_bottom_faces, dtype=np.uint32)
+
+        # VBO IDs
+        self.vbo_vertices = glGenBuffers(1)
+        self.vbo_side_faces = glGenBuffers(1)
+        self.vbo_top_bottom_faces = glGenBuffers(1)
+
+        self.init_vbo()
 
     def generate_geometry(self):
         vertices = []
-        faces = []
+        side_faces = []
+        top_bottom_faces = []
 
-        # Generate vertices for the top and bottom circles
         for j in [0, self.height]:
             for i in range(self.slices):
                 angle = 2 * np.pi * i / self.slices
@@ -26,57 +38,62 @@ class Cylinder(Object):
                 y = j
                 vertices.append((x, y, z))
 
-        # Add center vertices for the top and bottom circles
-        vertices.append((0, 0, 0))          # Bottom center
-        vertices.append((0, self.height, 0))  # Top center
+        bottom_center_index = len(vertices)
+        vertices.append((0, 0, 0))
+        top_center_index = len(vertices)
+        vertices.append((0, self.height, 0))
 
-        # Generate faces for the side
         for i in range(self.slices):
             next_i = (i + 1) % self.slices
             bottom_current = i
             bottom_next = next_i
             top_current = i + self.slices
             top_next = next_i + self.slices
-            faces.append((bottom_current, bottom_next, top_next, top_current))
+            side_faces.append((bottom_current, bottom_next, top_next, top_current))
+            top_bottom_faces.append((bottom_center_index, i, next_i))
+            top_bottom_faces.append((top_center_index, top_next, top_current))
 
-        # Generate faces for the top and bottom circles
-        bottom_center_index = 2 * self.slices
-        top_center_index = 2 * self.slices + 1
-        for i in range(self.slices):
-            next_i = (i + 1) % self.slices
-            faces.append((bottom_center_index, i, next_i))              # Bottom face
-            faces.append((top_center_index, top_next, top_current))  # Top face
+        return vertices, side_faces, top_bottom_faces
 
-        return vertices, faces
+    def init_vbo(self):
+        # Upload vertices to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
+        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
+
+        # Upload side faces to VBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_side_faces)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.side_faces.nbytes, self.side_faces, GL_STATIC_DRAW)
+
+        # Upload top and bottom faces to VBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_top_bottom_faces)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.top_bottom_faces.nbytes, self.top_bottom_faces, GL_STATIC_DRAW)
 
     def draw(self):
         glPushMatrix()
         glTranslatef(*self.position)
-        
         glRotatef(self.transform.rotation[0], 1, 0, 0)
         glRotatef(self.transform.rotation[1], 0, 1, 0)
         glRotatef(self.transform.rotation[2], 0, 0, 1)
-
         glScalef(*self.scale_factor)
-        
+
         if self.selected:
             glColor3f(1.0, 0.5, 0.0)
         else:
             glColor3f(0.5, 0.5, 0.5)
-        
-        # Draw side faces
-        glBegin(GL_QUADS)
-        for face in self.faces[:-2 * self.slices]:
-            for vertex in face:
-                glVertex3fv(self.vertices[vertex])
-        glEnd()
-        
-        # Draw top and bottom faces
-        glBegin(GL_TRIANGLES)
-        for face in self.faces[-2 * self.slices:]:
-            for vertex in face:
-                glVertex3fv(self.vertices[vertex])
-        glEnd()
+
+        # Desenhar faces laterais
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
+        glVertexPointer(3, GL_FLOAT, 0, None)
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_side_faces)
+        glDrawElements(GL_QUADS, len(self.side_faces) * 4, GL_UNSIGNED_INT, None)
+
+        # Desenhar faces superior e inferior
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_top_bottom_faces)
+        glDrawElements(GL_TRIANGLES, len(self.top_bottom_faces) * 3, GL_UNSIGNED_INT, None)
+
+        glDisableClientState(GL_VERTEX_ARRAY)
 
         glPopMatrix()
 

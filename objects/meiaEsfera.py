@@ -12,7 +12,12 @@ class HalfSphere(Object):
         self.scale_factor = [1.0, 1.0, 1.0]
 
         self.vertices, self.faces = self.generate_geometry()
-        self.vertex_buffer, self.index_buffer = self.setup_buffers()
+
+        # VBO IDs
+        self.vbo_vertices = glGenBuffers(1)
+        self.vbo_faces = glGenBuffers(1)
+
+        self.init_vbo()
 
     def generate_geometry(self):
         vertices = []
@@ -36,16 +41,14 @@ class HalfSphere(Object):
 
         return np.array(vertices, dtype=np.float32), np.array(faces, dtype=np.uint32)
 
-    def setup_buffers(self):
-        vertex_buffer = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer)
+    def init_vbo(self):
+        # Upload vertices to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
         glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
 
-        index_buffer = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer)
+        # Upload faces to VBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.faces.nbytes, self.faces, GL_STATIC_DRAW)
-
-        return vertex_buffer, index_buffer
 
     def draw(self):
         glPushMatrix()
@@ -64,10 +67,10 @@ class HalfSphere(Object):
 
         glEnableClientState(GL_VERTEX_ARRAY)
         
-        glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buffer)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
         glVertexPointer(3, GL_FLOAT, 0, None)
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.index_buffer)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
         glDrawElements(GL_TRIANGLES, len(self.faces) * 3, GL_UNSIGNED_INT, None)
 
         glDisableClientState(GL_VERTEX_ARRAY)

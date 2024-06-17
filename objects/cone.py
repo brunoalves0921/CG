@@ -14,6 +14,11 @@ class Cone(Object):
         self.vertices = self.generate_vertices()
         self.faces = self.generate_faces()
 
+        self.vbo_vertices = glGenBuffers(1)
+        self.vbo_faces = glGenBuffers(1)
+
+        self.init_vbo()
+
     def generate_vertices(self):
         vertices = [(0, 0, 0)]  # Center of base
         angle_increment = 2 * np.pi / self.slices
@@ -23,7 +28,7 @@ class Cone(Object):
             z = self.base_radius * np.sin(angle)
             vertices.append((x, 0, z))
         vertices.append((0, self.height, 0))  # Apex of the cone
-        return vertices
+        return np.array(vertices, dtype=np.float32)
 
     def generate_faces(self):
         faces = []
@@ -35,7 +40,16 @@ class Cone(Object):
         for i in range(1, self.slices):
             faces.append((apex_index, i, i+1))
         faces.append((apex_index, self.slices, 1))  # Last side face
-        return faces
+        return np.array(faces, dtype=np.uint32)
+
+    def init_vbo(self):
+        # Upload vertices to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
+        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
+
+        # Upload faces to VBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.faces.nbytes, self.faces, GL_STATIC_DRAW)
 
     def draw(self):
         glPushMatrix()
@@ -52,11 +66,15 @@ class Cone(Object):
         else:
             glColor3f(0.5, 0.5, 0.5)
         
-        glBegin(GL_TRIANGLES)
-        for face in self.faces:
-            for vertex in face:
-                glVertex3fv(self.vertices[vertex])
-        glEnd()
+        glEnableClientState(GL_VERTEX_ARRAY)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
+        glVertexPointer(3, GL_FLOAT, 0, None)
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
+        glDrawElements(GL_TRIANGLES, len(self.faces) * 3, GL_UNSIGNED_INT, None)
+        
+        glDisableClientState(GL_VERTEX_ARRAY)
 
         glPopMatrix()
 
@@ -87,6 +105,3 @@ class Cone(Object):
             self.position[1] += distance
         elif axis == (0, 0, 1):
             self.position[2] += distance
-
-    def shear(self, shear_factor, plane):
-        pass
