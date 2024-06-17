@@ -12,6 +12,7 @@ class HalfSphere(Object):
         self.scale_factor = [1.0, 1.0, 1.0]
 
         self.vertices, self.faces = self.generate_geometry()
+        self.vertex_buffer, self.index_buffer = self.setup_buffers()
 
     def generate_geometry(self):
         vertices = []
@@ -22,8 +23,8 @@ class HalfSphere(Object):
             for j in range(self.slices + 1):
                 phi = (j / self.slices) * (2 * np.pi)
                 x = self.radius * np.sin(theta) * np.cos(phi)
-                y = self.radius * np.sin(theta) * np.sin(phi)
-                z = self.radius * np.cos(theta)
+                z = self.radius * np.sin(theta) * np.sin(phi)
+                y = self.radius * np.cos(theta)
                 vertices.append((x, y, z))
 
         for i in range(self.stacks):
@@ -33,7 +34,18 @@ class HalfSphere(Object):
                 faces.append((first, second, first + 1))
                 faces.append((second, second + 1, first + 1))
 
-        return vertices, faces
+        return np.array(vertices, dtype=np.float32), np.array(faces, dtype=np.uint32)
+
+    def setup_buffers(self):
+        vertex_buffer = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer)
+        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
+
+        index_buffer = glGenBuffers(1)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.faces.nbytes, self.faces, GL_STATIC_DRAW)
+
+        return vertex_buffer, index_buffer
 
     def draw(self):
         glPushMatrix()
@@ -44,17 +56,21 @@ class HalfSphere(Object):
         glRotatef(self.transform.rotation[2], 0, 0, 1)
 
         glScalef(*self.scale_factor)
-        
+
         if self.selected:
             glColor3f(1.0, 0.5, 0.0)
         else:
             glColor3f(0.5, 0.5, 0.5)
+
+        glEnableClientState(GL_VERTEX_ARRAY)
         
-        glBegin(GL_TRIANGLES)
-        for face in self.faces:
-            for vertex in face:
-                glVertex3fv(self.vertices[vertex])
-        glEnd()
+        glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buffer)
+        glVertexPointer(3, GL_FLOAT, 0, None)
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.index_buffer)
+        glDrawElements(GL_TRIANGLES, len(self.faces) * 3, GL_UNSIGNED_INT, None)
+
+        glDisableClientState(GL_VERTEX_ARRAY)
 
         glPopMatrix()
 

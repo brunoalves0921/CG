@@ -22,12 +22,13 @@ class Cylinder(Object):
             for i in range(self.slices):
                 angle = 2 * np.pi * i / self.slices
                 x = self.radius * np.cos(angle)
-                y = self.radius * np.sin(angle)
-                vertices.append((x, y, j))
+                z = self.radius * np.sin(angle)
+                y = j
+                vertices.append((x, y, z))
 
         # Add center vertices for the top and bottom circles
         vertices.append((0, 0, 0))          # Bottom center
-        vertices.append((0, 0, self.height))  # Top center
+        vertices.append((0, self.height, 0))  # Top center
 
         # Generate faces for the side
         for i in range(self.slices):

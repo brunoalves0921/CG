@@ -9,137 +9,141 @@ class EventListener:
         self.rotate_mode = False
         self.translate_mode = False
         self.shear_mode = False
-        self.overview_active = False  # Adicionamos um flag para controlar se o overview está ativo
+        self.overview_active = False  # Flag to control overview state
     
     def run(self):
-        ctrl_pressed = pygame.key.get_mods() & KMOD_CTRL
-        shift_pressed = pygame.key.get_mods() & KMOD_SHIFT
-        alt_pressed = pygame.key.get_mods() & KMOD_ALT
+        mods = pygame.key.get_mods()
+        ctrl_pressed = mods & KMOD_CTRL
+        shift_pressed = mods & KMOD_SHIFT
+        alt_pressed = mods & KMOD_ALT
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
             elif event.type == pygame.KEYDOWN:
-                if event.key == K_r:
-                    self.rotate_mode = True
-                elif event.key == K_t:
-                    self.translate_mode = True
-                elif event.key == K_c:
-                    self.shear_mode = True
-                elif event.key == K_F1:
-                    if self.scene.show_overview:
-                        self.scene.overview_camera.set_preset_position(1)
-                    else:
-                        self.scene.camera.set_preset_position(1)
-                elif event.key == K_F2:
-                    if self.scene.show_overview:
-                        self.scene.overview_camera.set_preset_position(2)
-                    else:
-                        self.scene.camera.set_preset_position(2)
-                elif event.key == K_F3:
-                    if self.scene.show_overview:
-                        self.scene.overview_camera.set_preset_position(3)
-                    else:
-                        self.scene.camera.set_preset_position(3)
-                elif event.key == K_F4:
-                    if self.scene.show_overview:
-                        self.scene.overview_camera.set_preset_position(4)
-                    else:
-                        self.scene.camera.set_preset_position(4)
-                elif event.key == K_F5:
-                    if self.scene.show_overview:
-                        self.scene.overview_camera.set_preset_position(5)
-                    else:
-                        self.scene.camera.set_preset_position(5)
-                elif event.key == K_F6:
-                    if self.scene.show_overview:
-                        self.scene.overview_camera.set_preset_position(6)
-                    else:
-                        self.scene.camera.set_preset_position(6)
-                elif event.key == K_o:
-                    self.scene.show_overview = not self.scene.show_overview  # Alterna o estado do overview
-                    self.overview_active = self.scene.show_overview  # Atualiza o estado do flag para o overview ativo
+                self.handle_keydown(event)
             elif event.type == pygame.KEYUP:
-                if event.key == K_r:
-                    self.rotate_mode = False
-                elif event.key == K_t:
-                    self.translate_mode = False
-                elif event.key == K_c:
-                    self.shear_mode = False
+                self.handle_keyup(event)
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    x, y = pygame.mouse.get_pos()
-                    hits = self.scene.select_object(x, y)
-                    if len(hits) > 0:
-                        selected_object_index = hits[3] - 1
-                        selected_object = self.scene.objects[selected_object_index]
-                        if selected_object.selected:
-                            selected_object.selected = False
-                        else:
-                            if not shift_pressed:
-                                for obj in self.scene.objects:
-                                    obj.selected = False
-                            selected_object.selected = True
-                    self.last_pos = pygame.mouse.get_pos()
-                elif event.button == 3:
-                    self.last_pos = pygame.mouse.get_pos()
-                elif event.button in [4, 5]:
-                    direction = 1 if event.button == 4 else -1
-                    value_rotate = 5 * direction
-                    value_translate = 0.1 * direction
-                    value_scale = 0.05 * direction
-
-                    # Limitar a escala mínima
-                    min_scale = 0.1
-
-                    if any(obj.selected for obj in self.scene.objects):
-                        for obj in self.scene.objects:
-                            if obj.selected:
-                                if self.shear_mode:
-                                    if ctrl_pressed:
-                                        obj.shear(value_scale, 'xy')
-                                elif ctrl_pressed:
-                                    if self.rotate_mode:
-                                        obj.rotate(value_rotate, (1, 0, 0))
-                                    elif self.translate_mode:
-                                        obj.translate(value_translate, (1, 0, 0))
-                                    else:
-                                        # Limitar a escala mínima
-                                        if obj.transform.scale[0] + value_scale >= min_scale:
-                                            obj.scale(value_scale, (1, 0, 0))
-                                if shift_pressed:
-                                    if self.rotate_mode:
-                                        obj.rotate(value_rotate, (0, 1, 0))
-                                    elif self.translate_mode:
-                                        obj.translate(value_translate, (0, 1, 0))
-                                    else:
-                                        # Limitar a escala mínima
-                                        if obj.transform.scale[1] + value_scale >= min_scale:
-                                            obj.scale(value_scale, (0, 1, 0))
-                                if alt_pressed:
-                                    if self.rotate_mode:
-                                        obj.rotate(value_rotate, (0, 0, 1))
-                                    elif self.translate_mode:
-                                        obj.translate(value_translate, (0, 0, 1))
-                                    else:
-                                        # Limitar a escala mínima
-                                        if obj.transform.scale[2] + value_scale >= min_scale:
-                                            obj.scale(value_scale, (0, 0, 1))
-                    else:
-                        self.scene.camera.zoom += 0.5 * direction  # Ajusta o zoom da câmera principal
+                self.handle_mousebuttondown(event, ctrl_pressed, shift_pressed, alt_pressed)
             elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1 or event.button == 3:
-                    self.last_pos = None
+                self.handle_mousebuttonup(event)
             elif event.type == pygame.MOUSEMOTION:
-                if self.last_pos:
-                    x, y = pygame.mouse.get_pos()
-                    dx = x - self.last_pos[0]
-                    dy = y - self.last_pos[1]
-                    if event.buttons[2]:  # Botão direito do mouse
-                        self.scene.camera.position[0] += dx * 0.01
-                        self.scene.camera.position[1] -= dy * 0.01
-                    else:  # Botão esquerdo do mouse
-                        self.scene.camera.rotation[0] += dy
-                        self.scene.camera.rotation[1] += dx
-                    self.last_pos = (x, y)
+                self.handle_mousemotion(event)
+
+    def handle_keydown(self, event):
+        if event.key == K_r:
+            self.rotate_mode = True
+        elif event.key == K_t:
+            self.translate_mode = True
+        elif event.key == K_c:
+            self.shear_mode = True
+        elif event.key in [K_F1, K_F2, K_F3, K_F4, K_F5, K_F6]:
+            self.set_preset_position(event.key)
+        elif event.key == K_o:
+            self.scene.show_overview = not self.scene.show_overview
+            self.overview_active = self.scene.show_overview
+
+    def handle_keyup(self, event):
+        if event.key == K_r:
+            self.rotate_mode = False
+        elif event.key == K_t:
+            self.translate_mode = False
+        elif event.key == K_c:
+            self.shear_mode = False
+
+    def handle_mousebuttondown(self, event, ctrl_pressed, shift_pressed, alt_pressed):
+        if event.button == 1:
+            self.select_object(event, shift_pressed)
+        elif event.button == 3:
+            self.last_pos = pygame.mouse.get_pos()
+        elif event.button in [4, 5]:
+            self.handle_scroll(event, ctrl_pressed, shift_pressed, alt_pressed)
+
+    def handle_mousebuttonup(self, event):
+        if event.button in [1, 3]:
+            self.last_pos = None
+
+    def handle_mousemotion(self, event):
+        if self.last_pos:
+            self.update_camera_position(event)
+
+    def set_preset_position(self, key):
+        preset_index = key - K_F1 + 1
+        if self.scene.show_overview:
+            self.scene.overview_camera.set_preset_position(preset_index)
+        else:
+            self.scene.camera.set_preset_position(preset_index)
+
+    def select_object(self, event, shift_pressed):
+        x, y = pygame.mouse.get_pos()
+        hits = self.scene.select_object(x, y)
+        if hits is not None and len(hits) > 0:
+            selected_object_index = hits[3] - 1
+            selected_object = self.scene.objects[selected_object_index]
+            selected_object.selected = not selected_object.selected
+            if selected_object.selected and not shift_pressed:
+                for obj in self.scene.objects:
+                    if obj != selected_object:
+                        obj.selected = False
+        self.last_pos = pygame.mouse.get_pos()
+
+    def handle_scroll(self, event, ctrl_pressed, shift_pressed, alt_pressed):
+        direction = 1 if event.button == 4 else -1
+        value_rotate = 5 * direction
+        value_translate = 0.1 * direction
+        value_scale = 0.05 * direction
+        min_scale = 0.1
+
+        if any(obj.selected for obj in self.scene.objects):
+            for obj in self.scene.objects:
+                if obj.selected:
+                    self.apply_transformations(obj, value_rotate, value_translate, value_scale, min_scale, ctrl_pressed, shift_pressed, alt_pressed)
+        else:
+            self.scene.camera.zoom += 0.5 * direction
+
+    def apply_transformations(self, obj, value_rotate, value_translate, value_scale, min_scale, ctrl_pressed, shift_pressed, alt_pressed):
+        if self.shear_mode and ctrl_pressed:
+            obj.shear(value_scale, 'xy')
+        elif ctrl_pressed:
+            if self.rotate_mode:
+                obj.rotate(value_rotate, (1, 0, 0))
+            elif self.translate_mode:
+                obj.translate(value_translate, (1, 0, 0))
+            else:
+                self.apply_scale(obj, value_scale, min_scale, (1, 0, 0))
+        if shift_pressed:
+            if self.rotate_mode:
+                obj.rotate(value_rotate, (0, 1, 0))
+            elif self.translate_mode:
+                obj.translate(value_translate, (0, 1, 0))
+            else:
+                self.apply_scale(obj, value_scale, min_scale, (0, 1, 0))
+        if alt_pressed:
+            if self.rotate_mode:
+                obj.rotate(value_rotate, (0, 0, 1))
+            elif self.translate_mode:
+                obj.translate(value_translate, (0, 0, 1))
+            else:
+                self.apply_scale(obj, value_scale, min_scale, (0, 0, 1))
+
+    def apply_scale(self, obj, value_scale, min_scale, axis):
+        current_scale = obj.transform.scale
+        new_scale = [current_scale[i] + value_scale * axis[i] for i in range(3)]
+        new_scale = [max(min_scale, s) for s in new_scale]
+        obj.scale(new_scale[0] - current_scale[0], (1, 0, 0))
+        obj.scale(new_scale[1] - current_scale[1], (0, 1, 0))
+        obj.scale(new_scale[2] - current_scale[2], (0, 0, 1))
+
+    def update_camera_position(self, event):
+        x, y = pygame.mouse.get_pos()
+        dx = x - self.last_pos[0]
+        dy = y - self.last_pos[1]
+        if event.buttons[2]:  # Right mouse button
+            self.scene.camera.position[0] += dx * 0.01
+            self.scene.camera.position[1] -= dy * 0.01
+        else:  # Left mouse button
+            self.scene.camera.rotation[0] += dy
+            self.scene.camera.rotation[1] += dx
+        self.last_pos = (x, y)

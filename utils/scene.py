@@ -21,14 +21,14 @@ class Scene:
 
         self.camera = Camera()
         self.overview_camera = Camera()  # Câmera para o overview
-        self.objects = [Cube(), Cube(), Cube(), Sphere(), Cone(), HalfSphere(), Pyramid(), Cylinder()]
+        self.objects = [Cube(), Sphere(), Cone(), HalfSphere(), Pyramid(), Cylinder()]
+        self.objects[0].position = [0, 0, 0]
         self.objects[1].position = [3, 0, 0]
         self.objects[2].position = [-3, 0, 0]
         self.objects[3].position = [0, 3, 0]
         self.objects[4].position = [0, -3, 0]
         self.objects[5].position = [0, 0, 3]
-        self.objects[6].position = [0, 0, -3]
-        self.objects[7].position = [5, 0, 0]
+
 
         self.eventListener = EventListener(self)
         self.show_overview = False  # Adiciona atributo para controlar a visibilidade do overview

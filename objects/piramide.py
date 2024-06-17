@@ -16,11 +16,11 @@ class Pyramid(Object):
     def generate_vertices(self):
         half_base = self.base_length / 2
         vertices = [
-            (-half_base, -half_base, 0),  # Base vertices
-            (half_base, -half_base, 0),
-            (half_base, half_base, 0),
-            (-half_base, half_base, 0),
-            (0, 0, self.height)  # Apex
+            (-half_base, 0, -half_base),  # Base vertices
+            (half_base, 0, -half_base),
+            (half_base, 0, half_base),
+            (-half_base, 0, half_base),
+            (0, self.height, 0)  # Apex
         ]
         return vertices
 

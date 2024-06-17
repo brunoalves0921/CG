@@ -109,13 +109,7 @@ class Cube(Object):
         shear_matrix = np.identity(4)
         if plane == 'xy':
             shear_matrix[0][1] = shear_factor  # Shear X based on Y
-        elif plane == 'yx':
-            shear_matrix[1][0] = shear_factor  # Shear Y based on X
-        elif plane == 'xz':
-            shear_matrix[0][2] = shear_factor
-        elif plane == 'zx':
-            shear_matrix[2][0] = shear_factor
-
+            
         new_vertices = []
         for vertex in self.vertices:
             v = np.array(vertex + [1])
