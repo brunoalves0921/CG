@@ -9,6 +9,7 @@ from pygame.locals import DOUBLEBUF, OPENGL
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import gluPerspective, gluPickMatrix
+import time
 
 class Scene:
     def __init__(self, message_queue):
@@ -27,6 +28,10 @@ class Scene:
         self.overview_camera = Camera()
         self.eventListener = EventListener(self)
         self.show_overview = False
+
+        # FPS counter variables
+        self.clock = pygame.time.Clock()
+        self.fps = 0
 
     def add_object(self, object_type):
         if object_type == 'cube':
@@ -78,8 +83,12 @@ class Scene:
         if self.show_overview:
             self.draw_overview()
 
+        # Calculate FPS
+        self.fps = self.clock.get_fps()
+        self.display_fps()
+
         pygame.display.flip()
-        pygame.time.wait(10)
+        self.clock.tick(60)
 
     def draw_overview(self):
         glPushAttrib(GL_VIEWPORT_BIT | GL_TRANSFORM_BIT)
@@ -167,4 +176,27 @@ class Scene:
             return select_buffer[:hits * 4]
         else:
             return []
-    
+
+    def render_text(self, text, x, y, font_name='Arial', font_size=18):
+        font = pygame.font.SysFont(font_name, font_size)
+        text_surface = font.render(text, True, (255, 255, 255, 255), (0, 0, 0, 0))
+        text_data = pygame.image.tostring(text_surface, 'RGBA', True)
+        width, height = text_surface.get_size()
+
+        glRasterPos2f(x, y)
+        glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, text_data)
+
+    def display_fps(self):
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        glOrtho(0, self.display[0], 0, self.display[1], -1, 1)
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+        self.render_text(f"FPS: {self.fps:.2f}", 10, self.display[1] - 30)
+        glPopMatrix()
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+
