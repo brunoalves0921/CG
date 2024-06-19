@@ -24,7 +24,24 @@ class Scene:
         glClearColor(0.2, 0.2, 0.2, 1.0)
         glEnable(GL_DEPTH_TEST)
         glEnableClientState(GL_VERTEX_ARRAY)
-
+        
+        # Configurações de iluminação
+        glEnable(GL_LIGHTING)
+        glEnable(GL_LIGHT0)
+        glEnable(GL_NORMALIZE)
+        glEnable(GL_COLOR_MATERIAL)
+        glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
+        
+        # Configuração da luz
+        light_position = [1, 1, 1, 0]
+        glLightfv(GL_LIGHT0, GL_POSITION, light_position)
+        light_ambient = [0.1, 0.1, 0.1, 1.0]
+        glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient)
+        light_diffuse = [1.0, 1.0, 1.0, 1.0]
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse)
+        light_specular = [1.0, 1.0, 1.0, 1.0]
+        glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular)
+        
         self.camera = Camera()
         self.overview_camera = Camera()
         self.eventListener = EventListener(self)

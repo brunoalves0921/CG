@@ -1,5 +1,6 @@
 from objects import Object
 from OpenGL.GL import *
+from OpenGL.GLU import *
 import numpy as np
 
 class Cube(Object):
@@ -13,21 +14,6 @@ class Cube(Object):
         [-1, -1, 1],
         [-1, 1, 1]  # 7
     ], dtype=np.float32)
-
-    edges = np.array([
-        [0, 1],
-        [1, 2],
-        [2, 3],
-        [3, 0],
-        [4, 5],
-        [5, 7],
-        [7, 6],
-        [6, 4],
-        [0, 4],
-        [1, 5],
-        [2, 7],
-        [3, 6]
-    ], dtype=np.uint32)
 
     faces = np.array([
         [0, 1, 2, 3],
@@ -43,11 +29,12 @@ class Cube(Object):
         self.selected = False
         self.vertices = Cube.base_vertices.copy()
         self.scale_factor = [1.0, 1.0, 1.0]  # Adicionar atributo para controle da escala
+        self.normals = self.calculate_normals()
 
         # VBO IDs
         self.vbo_vertices = glGenBuffers(1)
-        self.vbo_edges = glGenBuffers(1)
         self.vbo_faces = glGenBuffers(1)
+        self.vbo_normals = glGenBuffers(1)
 
         self.init_vbo()
 
@@ -56,13 +43,13 @@ class Cube(Object):
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
         glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
 
-        # Upload edges to VBO
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_edges)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.edges.nbytes, self.edges, GL_STATIC_DRAW)
-
         # Upload faces to VBO
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.faces.nbytes, self.faces, GL_STATIC_DRAW)
+        
+        # Upload normals to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)
+        glBufferData(GL_ARRAY_BUFFER, self.normals.nbytes, self.normals, GL_STATIC_DRAW)
 
     def draw(self):
         glPushMatrix()
@@ -80,28 +67,45 @@ class Cube(Object):
         else:
             glColor3f(0.5, 0.5, 0.5)
         
+        # Configuração da iluminação
+        glEnable(GL_LIGHTING)
+        glEnable(GL_LIGHT0)
+        glLightfv(GL_LIGHT0, GL_POSITION, [5, 5, 5, 1])
+        glLightfv(GL_LIGHT0, GL_AMBIENT, [0.2, 0.2, 0.2, 1.0])
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, [0.8, 0.8, 0.8, 1.0])
+        glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+
         # Desenhar faces do cubo
         glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_NORMAL_ARRAY)
+        
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
         glVertexPointer(3, GL_FLOAT, 0, None)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)
+        glNormalPointer(GL_FLOAT, 0, None)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
-        glDrawElements(GL_QUADS, len(Cube.faces) * 4, GL_UNSIGNED_INT, None)
+        glDrawElements(GL_QUADS, len(self.faces.flatten()), GL_UNSIGNED_INT, None)
         
         glDisableClientState(GL_VERTEX_ARRAY)
-
-        # Desenhar arestas do cubo
-        glColor3f(0, 0, 0)
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
-        glVertexPointer(3, GL_FLOAT, 0, None)
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_edges)
-        glDrawElements(GL_LINES, len(Cube.edges) * 2, GL_UNSIGNED_INT, None)
-
-        glDisableClientState(GL_VERTEX_ARRAY)
+        glDisableClientState(GL_NORMAL_ARRAY)
+        glDisable(GL_LIGHTING)
 
         glPopMatrix()
+
+    def calculate_normals(self):
+        normals = np.zeros_like(self.vertices)
+        for face in self.faces:
+            v0 = self.vertices[face[0]]
+            v1 = self.vertices[face[1]]
+            v2 = self.vertices[face[2]]
+            normal = np.cross(v1 - v0, v2 - v0)
+            normal /= np.linalg.norm(normal)
+            for vertex_index in face:
+                normals[vertex_index] += normal
+        normals /= np.linalg.norm(normals, axis=1, keepdims=True)
+        return normals.astype(np.float32)
 
     def rotate(self, angle, axis):
         if axis == (1, 0, 0):
@@ -148,4 +152,5 @@ class Cube(Object):
                 new_vertices.append(vertex.tolist())
         
         self.vertices = np.array(new_vertices, dtype=np.float32)
-        self.init_vbo()  # Re-upload vertices to VBO
+        self.normals = self.calculate_normals()  # Recalcular normais
+        self.init_vbo()  # Re-upload vertices e normais para VBO
