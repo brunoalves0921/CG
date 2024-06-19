@@ -74,6 +74,8 @@ class EventListener:
             self.last_pos = None
 
     def handle_mousemotion(self, event):
+        x, y = pygame.mouse.get_pos()
+        self.scene.sidebar.update_hover(x, y)
         if self.last_pos:
             self.update_camera_position(event)
 
