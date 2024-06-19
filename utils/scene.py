@@ -3,6 +3,7 @@ import queue
 import numpy as np
 from utils.camera import Camera
 from utils.event_listener import EventListener
+from utils.sidebar import Sidebar
 from objects import Cube, Sphere, Cone, Cylinder, HalfSphere, Pyramid
 from objects.eixos import draw_axes
 from pygame.locals import DOUBLEBUF, OPENGL
@@ -28,6 +29,8 @@ class Scene:
         self.overview_camera = Camera()
         self.eventListener = EventListener(self)
         self.show_overview = False
+
+        self.sidebar = Sidebar()
 
         # FPS counter variables
         self.clock = pygame.time.Clock()
@@ -83,7 +86,21 @@ class Scene:
         if self.show_overview:
             self.draw_overview()
 
-        # Calculate FPS
+        # Desenhar a barra lateral
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        glOrtho(0, self.display[0], self.display[1], 0, -1, 1)
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+        self.sidebar.draw()
+        glPopMatrix()
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+
+        # Calcular e exibir FPS
         self.fps = self.clock.get_fps()
         self.display_fps()
 
@@ -199,4 +216,3 @@ class Scene:
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
         glMatrixMode(GL_MODELVIEW)
-

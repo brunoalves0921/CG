@@ -1,5 +1,5 @@
 import pygame
-from pygame.locals import KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t, K_c, K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_o
+from pygame.locals import KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t, K_c, K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_o, K_p
 from OpenGL.GL import *
 
 class EventListener:
@@ -44,6 +44,8 @@ class EventListener:
         elif event.key == K_o:
             self.scene.show_overview = not self.scene.show_overview
             self.overview_active = self.scene.show_overview
+        elif event.key == K_p:  # Tecla 'P' para alternar a visibilidade da Sidebar
+            self.scene.sidebar.toggle_visibility()
 
     def handle_keyup(self, event):
         if event.key == K_r:
@@ -54,11 +56,17 @@ class EventListener:
             self.shear_mode = False
 
     def handle_mousebuttondown(self, event, ctrl_pressed, shift_pressed, alt_pressed):
-        if event.button == 1:
-            self.select_object(event, shift_pressed)
-        elif event.button == 3:
+        x, y = pygame.mouse.get_pos()
+        
+        if event.button == 1:  # Botão esquerdo do mouse
+            action = self.scene.sidebar.check_click(x, y)
+            if action:
+                self.scene.message_queue.put(action)
+            else:
+                self.select_object(event, shift_pressed)
+        elif event.button == 3:  # Botão direito do mouse
             self.last_pos = pygame.mouse.get_pos()
-        elif event.button in [4, 5]:
+        elif event.button in [4, 5]:  # Scroll do mouse
             self.handle_scroll(event, ctrl_pressed, shift_pressed, alt_pressed)
 
     def handle_mousebuttonup(self, event):
