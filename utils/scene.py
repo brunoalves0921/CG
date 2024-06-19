@@ -193,6 +193,11 @@ class Scene:
             return select_buffer[:hits * 4]
         else:
             return []
+        
+    def delete_selected_object(self):
+        self.objects = [obj for obj in self.objects if not obj.selected]
+        print(f"Deleted selected object")
+        print(f"Total objects: {len(self.objects)}")
 
     def render_text(self, text, x, y, font_name='Arial', font_size=18):
         font = pygame.font.SysFont(font_name, font_size)

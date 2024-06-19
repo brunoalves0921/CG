@@ -1,5 +1,5 @@
 import pygame
-from pygame.locals import KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t, K_c, K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_o, K_p
+from pygame.locals import KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t, K_c, K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_o, K_p, K_DELETE
 from OpenGL.GL import *
 
 class EventListener:
@@ -46,6 +46,11 @@ class EventListener:
             self.overview_active = self.scene.show_overview
         elif event.key == K_p:  # Tecla 'P' para alternar a visibilidade da Sidebar
             self.scene.sidebar.toggle_visibility()
+        elif event.key == K_DELETE:
+            self.delete_selected_object()
+
+    def delete_selected_object(self):
+        self.scene.delete_selected_object()
 
     def handle_keyup(self, event):
         if event.key == K_r:
