@@ -1,6 +1,5 @@
 import pygame
-import queue
-import numpy as np
+from objects import Mesh
 from utils.camera import Camera
 from utils.event_listener import EventListener
 from utils.sidebar import Sidebar
@@ -10,7 +9,6 @@ from pygame.locals import DOUBLEBUF, OPENGL
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import gluPerspective, gluPickMatrix
-import time
 
 class Scene:
     def __init__(self, message_queue):
@@ -52,6 +50,8 @@ class Scene:
         # FPS counter variables
         self.clock = pygame.time.Clock()
         self.fps = 0
+
+        #self.objects.append(Mesh([0, 0, 0], 'objects/mesh/male.obj', True))
 
     def add_object(self, object_type):
         if object_type == 'cube':

@@ -1,6 +1,7 @@
 from objects import Object
 from OpenGL.GL import *
 import numpy as np
+from PIL import Image
 
 class Pyramid(Object):
     def __init__(self, base_length=2, height=2):
@@ -12,10 +13,16 @@ class Pyramid(Object):
 
         self.vertices = np.array(self.generate_vertices(), dtype=np.float32)
         self.faces = np.array(self.generate_faces(), dtype=np.uint32)
+        self.uvs = np.array(self.generate_uvs(), dtype=np.float32)
+
+        self.texture = None
+        self.texture_id = None
+        self.texture_loaded = False
 
         # VBO IDs
         self.vbo_vertices = glGenBuffers(1)
         self.vbo_faces = glGenBuffers(1)
+        self.vbo_uvs = glGenBuffers(1)
 
         self.init_vbo()
 
@@ -41,6 +48,16 @@ class Pyramid(Object):
         ]
         return faces
 
+    def generate_uvs(self):
+        uvs = [
+            (0, 0),  # UV coordinates for the base vertices
+            (1, 0),
+            (1, 1),
+            (0, 1),
+            (0.5, 0.5)  # UV coordinates for the apex
+        ]
+        return uvs
+
     def init_vbo(self):
         # Upload vertices to VBO
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
@@ -49,6 +66,30 @@ class Pyramid(Object):
         # Upload faces to VBO
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.faces.nbytes, self.faces, GL_STATIC_DRAW)
+
+        # Upload UVs to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
+        glBufferData(GL_ARRAY_BUFFER, self.uvs.nbytes, self.uvs, GL_STATIC_DRAW)
+
+    def load_texture(self, file_path):
+        if not self.texture_loaded:
+            image = Image.open(file_path)
+            image = image.transpose(Image.FLIP_TOP_BOTTOM)
+            image_data = np.array(list(image.getdata()), np.uint8)
+
+            if self.texture_id:
+                glDeleteTextures([self.texture_id])
+
+            self.texture_id = glGenTextures(1)
+            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image_data)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+
+            self.texture_loaded = True
+            self.texture = file_path
 
     def draw(self):
         glPushMatrix()
@@ -64,11 +105,26 @@ class Pyramid(Object):
             glColor3f(1.0, 0.5, 0.0)
         else:
             glColor3f(0.5, 0.5, 0.5)
-        
-        # Desenhar faces da pirâmide
+
+        if self.texture_id:
+            glEnable(GL_TEXTURE_2D)
+            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+
+        glEnable(GL_LIGHTING)
+        glEnable(GL_LIGHT0)
+        glLightfv(GL_LIGHT0, GL_POSITION, [5, 5, 5, 1])
+        glLightfv(GL_LIGHT0, GL_AMBIENT, [0.2, 0.2, 0.2, 1.0])
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, [0.8, 0.8, 0.8, 1.0])
+        glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+
         glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
         glVertexPointer(3, GL_FLOAT, 0, None)
+
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
+        glTexCoordPointer(2, GL_FLOAT, 0, None)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
         
@@ -81,6 +137,12 @@ class Pyramid(Object):
             glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, ctypes.c_void_p(i * 3 * 4))
 
         glDisableClientState(GL_VERTEX_ARRAY)
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY)
+
+        if self.texture_id:
+            glDisable(GL_TEXTURE_2D)
+
+        glDisable(GL_LIGHTING)
 
         glPopMatrix()
 

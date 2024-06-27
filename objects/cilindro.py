@@ -1,6 +1,8 @@
 from objects import Object
 from OpenGL.GL import *
+from OpenGL.GLU import *
 import numpy as np
+from PIL import Image
 
 class Cylinder(Object):
     def __init__(self, radius=1, height=2, slices=20):
@@ -11,17 +13,17 @@ class Cylinder(Object):
         self.slices = slices
         self.scale_factor = [1.0, 1.0, 1.0]
 
-        self.vertices, self.side_faces, self.top_bottom_faces = self.generate_geometry()
+        self.vertices, self.side_faces, self.top_bottom_faces, self.uvs = self.generate_geometry()
+        self.normals = self.calculate_normals()
 
-        # Convertendo os dados para numpy arrays
-        self.vertices = np.array(self.vertices, dtype=np.float32)
-        self.side_faces = np.array(self.side_faces, dtype=np.uint32)
-        self.top_bottom_faces = np.array(self.top_bottom_faces, dtype=np.uint32)
+        self.texture_id = None
+        self.texture_loaded = False
 
-        # VBO IDs
         self.vbo_vertices = glGenBuffers(1)
         self.vbo_side_faces = glGenBuffers(1)
         self.vbo_top_bottom_faces = glGenBuffers(1)
+        self.vbo_normals = glGenBuffers(1)
+        self.vbo_uvs = glGenBuffers(1)  # Novo VBO para coordenadas UV
 
         self.init_vbo()
 
@@ -29,6 +31,7 @@ class Cylinder(Object):
         vertices = []
         side_faces = []
         top_bottom_faces = []
+        uvs = []
 
         for j in [0, self.height]:
             for i in range(self.slices):
@@ -37,11 +40,16 @@ class Cylinder(Object):
                 z = self.radius * np.sin(angle)
                 y = j
                 vertices.append((x, y, z))
+                u = i / self.slices
+                v = j / self.height
+                uvs.append((u, v))
 
         bottom_center_index = len(vertices)
         vertices.append((0, 0, 0))
+        uvs.append((0.5, 0.5))
         top_center_index = len(vertices)
         vertices.append((0, self.height, 0))
+        uvs.append((0.5, 0.5))
 
         for i in range(self.slices):
             next_i = (i + 1) % self.slices
@@ -53,20 +61,43 @@ class Cylinder(Object):
             top_bottom_faces.append((bottom_center_index, i, next_i))
             top_bottom_faces.append((top_center_index, top_next, top_current))
 
-        return vertices, side_faces, top_bottom_faces
+        return np.array(vertices, dtype=np.float32), np.array(side_faces, dtype=np.uint32), np.array(top_bottom_faces, dtype=np.uint32), np.array(uvs, dtype=np.float32)
+
+    def load_texture(self, file_path):
+        if not self.texture_loaded:
+            image = Image.open(file_path)
+            image = image.transpose(Image.FLIP_TOP_BOTTOM)
+            image_data = np.array(list(image.getdata()), np.uint8)
+
+            if self.texture_id:
+                glDeleteTextures([self.texture_id])
+
+            self.texture_id = glGenTextures(1)
+            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image_data)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+
+            self.texture_loaded = True
+            self.texture = file_path
 
     def init_vbo(self):
-        # Upload vertices to VBO
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
         glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
 
-        # Upload side faces to VBO
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_side_faces)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.side_faces.nbytes, self.side_faces, GL_STATIC_DRAW)
 
-        # Upload top and bottom faces to VBO
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_top_bottom_faces)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.top_bottom_faces.nbytes, self.top_bottom_faces, GL_STATIC_DRAW)
+
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)
+        glBufferData(GL_ARRAY_BUFFER, self.normals.nbytes, self.normals, GL_STATIC_DRAW)
+
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
+        glBufferData(GL_ARRAY_BUFFER, self.uvs.nbytes, self.uvs, GL_STATIC_DRAW)
 
     def draw(self):
         glPushMatrix()
@@ -81,21 +112,62 @@ class Cylinder(Object):
         else:
             glColor3f(0.5, 0.5, 0.5)
 
-        # Desenhar faces laterais
+        if self.texture_id:
+            glEnable(GL_TEXTURE_2D)
+            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+
+        glEnable(GL_LIGHTING)
+        glEnable(GL_LIGHT0)
+        glLightfv(GL_LIGHT0, GL_POSITION, [5, 5, 5, 1])
+        glLightfv(GL_LIGHT0, GL_AMBIENT, [0.2, 0.2, 0.2, 1.0])
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, [0.8, 0.8, 0.8, 1.0])
+        glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+
         glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_NORMAL_ARRAY)
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
         glVertexPointer(3, GL_FLOAT, 0, None)
 
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)
+        glNormalPointer(GL_FLOAT, 0, None)
+
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
+        glTexCoordPointer(2, GL_FLOAT, 0, None)
+
+        # Desenhar faces laterais
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_side_faces)
-        glDrawElements(GL_QUADS, len(self.side_faces) * 4, GL_UNSIGNED_INT, None)
+        glDrawElements(GL_QUADS, len(self.side_faces.flatten()), GL_UNSIGNED_INT, None)
 
         # Desenhar faces superior e inferior
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_top_bottom_faces)
-        glDrawElements(GL_TRIANGLES, len(self.top_bottom_faces) * 3, GL_UNSIGNED_INT, None)
+        glDrawElements(GL_TRIANGLES, len(self.top_bottom_faces.flatten()), GL_UNSIGNED_INT, None)
 
         glDisableClientState(GL_VERTEX_ARRAY)
+        glDisableClientState(GL_NORMAL_ARRAY)
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY)
+
+        if self.texture_id:
+            glDisable(GL_TEXTURE_2D)
+
+        glDisable(GL_LIGHTING)
 
         glPopMatrix()
+
+    def calculate_normals(self):
+        normals = np.zeros_like(self.vertices)
+        for face in self.side_faces:
+            v0 = self.vertices[face[0]]
+            v1 = self.vertices[face[1]]
+            v2 = self.vertices[face[2]]
+            v3 = self.vertices[face[3]]
+            normal = np.cross(v1 - v0, v3 - v0)
+            normal /= np.linalg.norm(normal)
+            for vertex_index in face:
+                normals[vertex_index] += normal
+        normals /= np.linalg.norm(normals, axis=1, keepdims=True)
+        return normals.astype(np.float32)
 
     def rotate(self, angle, axis):
         if axis == (1, 0, 0):

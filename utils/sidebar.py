@@ -1,6 +1,9 @@
 import pygame
-from OpenGL.GL import *
+import tkinter as tk
 import OpenGL.GLUT as glut
+from tkinter import filedialog
+from OpenGL.GL import *
+from objects import Cube, Sphere  # Substitua pelo caminho correto onde as classes Cube e Sphere estão definidas
 from math import cos, sin
 
 class Sidebar:
@@ -11,18 +14,19 @@ class Sidebar:
             {'label': 'Cone', 'action': 'cone'},
             {'label': 'Cilindro', 'action': 'cylinder'},
             {'label': 'Meia Esfera', 'action': 'halfsphere'},
-            {'label': 'Pirâmide', 'action': 'pyramid'}
+            {'label': 'Pirâmide', 'action': 'pyramid'},
+            {'label': 'Adicionar Textura', 'action': 'add_texture'}  # Novo botão
         ]
         self.width = 200
         self.height = 50
         self.spacing = 10
         self.start_x = 10
-        self.start_y = 100  # Ajustado para começar mais abaixo
+        self.start_y = 100
 
         pygame.font.init()
         self.font = pygame.font.SysFont('Arial', 18)
 
-        self.visible = True  # Inicialmente a sidebar está visível
+        self.visible = True
         self.hovered_button = None
 
     def draw(self):
@@ -68,16 +72,40 @@ class Sidebar:
         glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, text_data)
 
 
-    def check_click(self, x, y):
+    def check_click(self, x, y, scene):
         if not self.visible:
             return None
 
         for i, button in enumerate(self.buttons):
             button_y = self.start_y + i * (self.height + self.spacing)
-            if (self.start_x <= x <= self.start_x + self.width and 
-                button_y <= y <= button_y + self.height):
-                return button['action']
+            if self.start_x <= x <= self.start_x + self.width and button_y <= y <= button_y + self.height:
+                action = button['action']
+                if action == 'add_texture':
+                    self.add_texture(scene)
+                else:
+                    return action
         return None
+
+    def add_texture(self, scene):
+        # Verifica se algum objeto está selecionado
+        selected_object = None
+        for obj in scene.objects:
+            if obj.selected:
+                selected_object = obj
+                break
+
+        if selected_object is None:
+            print("Nenhum objeto selecionado para adicionar textura.")
+            return
+
+        # Abrir o menu do Tkinter para escolher o arquivo de textura
+        root = tk.Tk()
+        root.withdraw()  # Esconde a janela principal do Tkinter
+        file_path = filedialog.askopenfilename(
+            filetypes=[("Image files", "*.jpg *.jpeg *.png *.bmp"), ("All files", "*.*")]
+        )
+        if file_path:
+            selected_object.load_texture(file_path)
 
     def update_hover(self, mouse_x, mouse_y):
         if not self.visible:

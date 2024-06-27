@@ -1,6 +1,8 @@
 from objects import Object
 from OpenGL.GL import *
+from OpenGL.GLU import *
 import numpy as np
+from PIL import Image
 
 class Cone(Object):
     def __init__(self, base_radius=1, height=2, slices=20):
@@ -16,8 +18,14 @@ class Cone(Object):
 
         self.vbo_vertices = glGenBuffers(1)
         self.vbo_faces = glGenBuffers(1)
+        self.vbo_normals = glGenBuffers(1)
+        self.vbo_tex_coords = glGenBuffers(1)  # VBO para coordenadas de textura
 
         self.init_vbo()
+
+        self.texture = None  # Novo atributo para armazenar a textura
+        self.texture_id = None
+        self.texture_loaded = False  # Flag para controlar se a textura já foi carregada
 
     def generate_vertices(self):
         vertices = [(0, 0, 0)]  # Center of base
@@ -51,6 +59,18 @@ class Cone(Object):
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.faces.nbytes, self.faces, GL_STATIC_DRAW)
 
+        # Calculate normals
+        self.normals = self.calculate_normals()
+
+        # Upload normals to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)
+        glBufferData(GL_ARRAY_BUFFER, self.normals.nbytes, self.normals, GL_STATIC_DRAW)
+
+        # Upload texture coordinates to VBO
+        self.tex_coords = self.generate_texture_coords()
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_tex_coords)
+        glBufferData(GL_ARRAY_BUFFER, self.tex_coords.nbytes, self.tex_coords, GL_STATIC_DRAW)
+
     def draw(self):
         glPushMatrix()
         glTranslatef(*self.position)
@@ -67,16 +87,46 @@ class Cone(Object):
             glColor3f(0.5, 0.5, 0.5)
         
         glEnableClientState(GL_VERTEX_ARRAY)
-        
+        glEnableClientState(GL_NORMAL_ARRAY)
+
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
         glVertexPointer(3, GL_FLOAT, 0, None)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)
+        glNormalPointer(GL_FLOAT, 0, None)
+
+        if self.texture_id:
+            glEnable(GL_TEXTURE_2D)
+            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+
+            glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+            glBindBuffer(GL_ARRAY_BUFFER, self.vbo_tex_coords)
+            glTexCoordPointer(2, GL_FLOAT, 0, None)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
-        glDrawElements(GL_TRIANGLES, len(self.faces) * 3, GL_UNSIGNED_INT, None)
-        
+        glDrawElements(GL_TRIANGLES, len(self.faces.flatten()), GL_UNSIGNED_INT, None)
+
         glDisableClientState(GL_VERTEX_ARRAY)
+        glDisableClientState(GL_NORMAL_ARRAY)
+
+        if self.texture_id:
+            glDisable(GL_TEXTURE_2D)
+            glDisableClientState(GL_TEXTURE_COORD_ARRAY)
 
         glPopMatrix()
+
+    def calculate_normals(self):
+        normals = np.zeros_like(self.vertices)
+        for face in self.faces:
+            v0 = self.vertices[face[0]]
+            v1 = self.vertices[face[1]]
+            v2 = self.vertices[face[2]]
+            normal = np.cross(v1 - v0, v2 - v0)
+            normal /= np.linalg.norm(normal)
+            for vertex_index in face:
+                normals[vertex_index] += normal
+        normals /= np.linalg.norm(normals, axis=1, keepdims=True)
+        return normals.astype(np.float32)
 
     def rotate(self, angle, axis):
         if axis == (1, 0, 0):
@@ -105,3 +155,31 @@ class Cone(Object):
             self.position[1] += distance
         elif axis == (0, 0, 1):
             self.position[2] += distance
+
+    def load_texture(self, file_path):
+        if not self.texture_loaded:  # Verifica se a textura já foi carregada
+            image = Image.open(file_path)
+            image = image.transpose(Image.FLIP_TOP_BOTTOM)
+            image_data = np.array(list(image.getdata()), np.uint8)
+
+            if self.texture_id:
+                glDeleteTextures([self.texture_id])
+
+            self.texture_id = glGenTextures(1)
+            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image_data)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+
+            self.texture_loaded = True  # Marca a textura como carregada
+
+            self.texture = file_path
+
+    def generate_texture_coords(self):
+        tex_coords = []
+        for i in range(self.slices + 1):
+            tex_coords.append([i / self.slices, 0])
+        tex_coords.append([0.5, 1])  # Textura do vértice do ápice
+        return np.array(tex_coords, dtype=np.float32)

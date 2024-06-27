@@ -1,42 +1,126 @@
 from objects import Object
 from OpenGL.GL import *
-from OpenGL.GLU import *
+from PIL import Image
 import numpy as np
 
 class Cube(Object):
-    base_vertices = np.array([
-        [1, -1, -1],  # 0
-        [1, 1, -1],
-        [-1, 1, -1],
-        [-1, -1, -1],  # 3
-        [1, -1, 1],
-        [1, 1, 1],
-        [-1, -1, 1],
-        [-1, 1, 1]  # 7
-    ], dtype=np.float32)
-
-    faces = np.array([
-        [0, 1, 2, 3],
-        [3, 2, 7, 6],
-        [6, 7, 5, 4],
-        [4, 5, 1, 0],
-        [1, 5, 7, 2],
-        [4, 0, 3, 6]
-    ], dtype=np.uint32)
-
     def __init__(self):
         super().__init__([0, 0, 0])
         self.selected = False
-        self.vertices = Cube.base_vertices.copy()
-        self.scale_factor = [1.0, 1.0, 1.0]  # Adicionar atributo para controle da escala
-        self.normals = self.calculate_normals()
+        self.vertices = self.generate_vertices()
+        self.faces = self.generate_faces()
+        self.uvs = self.generate_uvs()
+        self.scale_factor = [1.0, 1.0, 1.0]
+        self.texture_id = None
+        self.texture_loaded = False
 
         # VBO IDs
         self.vbo_vertices = glGenBuffers(1)
         self.vbo_faces = glGenBuffers(1)
-        self.vbo_normals = glGenBuffers(1)
+        self.vbo_uvs = glGenBuffers(1)
 
         self.init_vbo()
+
+    def generate_vertices(self):
+        vertices = [
+            # Front face
+            [-1, -1, 1],
+            [1, -1, 1],
+            [1, 1, 1],
+            [-1, 1, 1],
+            # Back face
+            [-1, -1, -1],
+            [-1, 1, -1],
+            [1, 1, -1],
+            [1, -1, -1],
+            # Left face
+            [-1, -1, -1],
+            [-1, -1, 1],
+            [-1, 1, 1],
+            [-1, 1, -1],
+            # Right face
+            [1, -1, -1],
+            [1, 1, -1],
+            [1, 1, 1],
+            [1, -1, 1],
+            # Top face
+            [-1, 1, -1],
+            [-1, 1, 1],
+            [1, 1, 1],
+            [1, 1, -1],
+            # Bottom face
+            [-1, -1, -1],
+            [1, -1, -1],
+            [1, -1, 1],
+            [-1, -1, 1]
+        ]
+        return np.array(vertices, dtype=np.float32)
+
+    def generate_faces(self):
+        faces = [
+            (0, 1, 2, 3),  # Front face
+            (4, 5, 6, 7),  # Back face
+            (8, 9, 10, 11),  # Left face
+            (12, 13, 14, 15),  # Right face
+            (16, 17, 18, 19),  # Top face
+            (20, 21, 22, 23)  # Bottom face
+        ]
+        return np.array(faces, dtype=np.uint32)
+
+    def generate_uvs(self):
+        uvs = [
+            # Front face
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            # Back face
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            [0, 0],
+            # Left face
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            # Right face
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            # Top face
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            # Bottom face
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1]
+        ]
+        return np.array(uvs, dtype=np.float32)
+
+    def load_texture(self, file_path):
+        if not self.texture_loaded:
+            image = Image.open(file_path)
+            image = image.transpose(Image.FLIP_TOP_BOTTOM)
+            image_data = np.array(list(image.getdata()), np.uint8)
+
+            if self.texture_id:
+                glDeleteTextures([self.texture_id])
+
+            self.texture_id = glGenTextures(1)
+            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image_data)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+
+            self.texture_loaded = True
+            self.texture = file_path
 
     def init_vbo(self):
         # Upload vertices to VBO
@@ -46,10 +130,10 @@ class Cube(Object):
         # Upload faces to VBO
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.faces.nbytes, self.faces, GL_STATIC_DRAW)
-        
-        # Upload normals to VBO
-        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)
-        glBufferData(GL_ARRAY_BUFFER, self.normals.nbytes, self.normals, GL_STATIC_DRAW)
+
+        # Upload UVs to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
+        glBufferData(GL_ARRAY_BUFFER, self.uvs.nbytes, self.uvs, GL_STATIC_DRAW)
 
     def draw(self):
         glPushMatrix()
@@ -59,15 +143,17 @@ class Cube(Object):
         glRotatef(self.transform.rotation[1], 0, 1, 0)
         glRotatef(self.transform.rotation[2], 0, 0, 1)
 
-        glScalef(*self.scale_factor)  # Aplicar escala
+        glScalef(*self.scale_factor)
         
-        # Definir cor do cubo se selecionado ou não
         if self.selected:
             glColor3f(1.0, 0.5, 0.0)
         else:
             glColor3f(0.5, 0.5, 0.5)
-        
-        # Configuração da iluminação
+
+        if self.texture_id:
+            glEnable(GL_TEXTURE_2D)
+            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
         glLightfv(GL_LIGHT0, GL_POSITION, [5, 5, 5, 1])
@@ -75,37 +161,29 @@ class Cube(Object):
         glLightfv(GL_LIGHT0, GL_DIFFUSE, [0.8, 0.8, 0.8, 1.0])
         glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 
-        # Desenhar faces do cubo
         glEnableClientState(GL_VERTEX_ARRAY)
-        glEnableClientState(GL_NORMAL_ARRAY)
-        
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
         glVertexPointer(3, GL_FLOAT, 0, None)
-        
-        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)
-        glNormalPointer(GL_FLOAT, 0, None)
+
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
+        glTexCoordPointer(2, GL_FLOAT, 0, None)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
-        glDrawElements(GL_QUADS, len(self.faces.flatten()), GL_UNSIGNED_INT, None)
         
+        for face in range(6):
+            glDrawElements(GL_QUADS, 4, GL_UNSIGNED_INT, ctypes.c_void_p(face * 4 * 4))
+
         glDisableClientState(GL_VERTEX_ARRAY)
-        glDisableClientState(GL_NORMAL_ARRAY)
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY)
+
+        if self.texture_id:
+            glDisable(GL_TEXTURE_2D)
+
         glDisable(GL_LIGHTING)
 
         glPopMatrix()
-
-    def calculate_normals(self):
-        normals = np.zeros_like(self.vertices)
-        for face in self.faces:
-            v0 = self.vertices[face[0]]
-            v1 = self.vertices[face[1]]
-            v2 = self.vertices[face[2]]
-            normal = np.cross(v1 - v0, v2 - v0)
-            normal /= np.linalg.norm(normal)
-            for vertex_index in face:
-                normals[vertex_index] += normal
-        normals /= np.linalg.norm(normals, axis=1, keepdims=True)
-        return normals.astype(np.float32)
 
     def rotate(self, angle, axis):
         if axis == (1, 0, 0):
@@ -138,19 +216,24 @@ class Cube(Object):
     def shear(self, shear_factor, plane):
         shear_matrix = np.identity(4)
         if plane == 'xy':
-            shear_matrix[0][1] = shear_factor  # Shear X based on Y
-            
-        new_vertices = []
-        for vertex in self.vertices:
-            v = np.array(vertex.tolist() + [1])  # Adiciona 1 para transformação homogênea
-            if (plane in ['xy', 'xz'] and vertex[1] >= 0) or \
-               (plane in ['yx', 'yz'] and vertex[0] >= 0) or \
-               (plane in ['zx', 'zy'] and vertex[2] >= 0):
-                v_new = shear_matrix @ v
-                new_vertices.append(v_new[:3].tolist())
-            else:
-                new_vertices.append(vertex.tolist())
-        
-        self.vertices = np.array(new_vertices, dtype=np.float32)
-        self.normals = self.calculate_normals()  # Recalcular normais
-        self.init_vbo()  # Re-upload vertices e normais para VBO
+            shear_matrix[0][1] = shear_factor
+        elif plane == 'xz':
+            shear_matrix[0][2] = shear_factor
+        elif plane == 'yx':
+            shear_matrix[1][0] = shear_factor
+        elif plane == 'yz':
+            shear_matrix[1][2] = shear_factor
+        elif plane == 'zx':
+            shear_matrix[2][0] = shear_factor
+        elif plane == 'zy':
+            shear_matrix[2][1] = shear_factor
+
+        # Aplica a transformação de shear nos vértices
+        for i in range(len(self.vertices)):
+            vertex = np.append(self.vertices[i], 1)  # Adiciona 1 para coordenadas homogêneas
+            transformed_vertex = np.dot(shear_matrix, vertex)
+            self.vertices[i] = transformed_vertex[:3]  # Remove a coordenada homogênea
+
+        # Atualiza o VBO com os vértices transformados
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
+        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)

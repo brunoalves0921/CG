@@ -64,7 +64,7 @@ class EventListener:
         x, y = pygame.mouse.get_pos()
         
         if event.button == 1:  # Botão esquerdo do mouse
-            action = self.scene.sidebar.check_click(x, y)
+            action = self.scene.sidebar.check_click(x, y, self.scene)
             if action:
                 self.scene.message_queue.put(action)
             else:
