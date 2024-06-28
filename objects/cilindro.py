@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 
 class Cylinder(Object):
-    def __init__(self, radius=1, height=2, slices=20):
+    def __init__(self, radius=1, height=2, slices=20, texture=None):
         super().__init__([0, 0, 0])
         self.selected = False
         self.radius = radius
@@ -16,6 +16,7 @@ class Cylinder(Object):
         self.vertices, self.side_faces, self.top_bottom_faces, self.uvs = self.generate_geometry()
         self.normals = self.calculate_normals()
 
+        self.texture = texture
         self.texture_id = None
         self.texture_loaded = False
 
@@ -23,9 +24,12 @@ class Cylinder(Object):
         self.vbo_side_faces = glGenBuffers(1)
         self.vbo_top_bottom_faces = glGenBuffers(1)
         self.vbo_normals = glGenBuffers(1)
-        self.vbo_uvs = glGenBuffers(1)  # Novo VBO para coordenadas UV
+        self.vbo_uvs = glGenBuffers(1)
 
         self.init_vbo()
+
+        if self.texture:
+            self.load_texture(self.texture)
 
     def generate_geometry(self):
         vertices = []
@@ -82,6 +86,30 @@ class Cylinder(Object):
 
             self.texture_loaded = True
             self.texture = file_path
+
+    def to_dict(self):
+        return {
+            'type': 'cylinder',
+            'position': self.position,
+            'rotation': self.transform.rotation,
+            'scale': self.scale_factor,
+            'radius': self.radius,
+            'height': self.height,
+            'slices': self.slices,
+            'texture': self.texture
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        radius = data['radius']
+        height = data['height']
+        slices = data['slices']
+        texture = data.get('texture')
+        cylinder = cls(radius=radius, height=height, slices=slices, texture=texture)
+        cylinder.position = data['position']
+        cylinder.transform.rotation = data['rotation']
+        cylinder.scale_factor = data['scale']
+        return cylinder
 
     def init_vbo(self):
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
@@ -157,17 +185,27 @@ class Cylinder(Object):
 
     def calculate_normals(self):
         normals = np.zeros_like(self.vertices)
+
+        # Calculate normals for side faces
         for face in self.side_faces:
             v0 = self.vertices[face[0]]
             v1 = self.vertices[face[1]]
             v2 = self.vertices[face[2]]
             v3 = self.vertices[face[3]]
             normal = np.cross(v1 - v0, v3 - v0)
-            normal /= np.linalg.norm(normal)
+            normal_length = np.linalg.norm(normal)
+            if normal_length > 0:
+                normal /= normal_length
             for vertex_index in face:
                 normals[vertex_index] += normal
-        normals /= np.linalg.norm(normals, axis=1, keepdims=True)
+        
+        # Normalize normals
+        normals_length = np.linalg.norm(normals, axis=1, keepdims=True)
+        valid_normals = np.squeeze(normals_length > 0)
+        normals[valid_normals] /= normals_length[valid_normals]
+
         return normals.astype(np.float32)
+
 
     def rotate(self, angle, axis):
         if axis == (1, 0, 0):

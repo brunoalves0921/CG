@@ -5,23 +5,27 @@ import numpy as np
 from PIL import Image
 
 class Sphere(Object):
-    def __init__(self, radius=1, subdivisions=3):
+    def __init__(self, radius=1, subdivisions=3, texture=None):
         super().__init__([0, 0, 0])
         self.selected = False
         self.radius = radius
-        self.vertices, self.faces, self.uvs = self.create_sphere(radius, subdivisions)
-        self.normals = self.calculate_normals()
-
-        self.texture = None
+        self.subdivisions = subdivisions
+        self.texture = texture
         self.texture_id = None
         self.texture_loaded = False
+
+        self.vertices, self.faces, self.uvs = self.create_sphere(radius, subdivisions)
+        self.normals = self.calculate_normals()
 
         self.vbo_vertices = glGenBuffers(1)
         self.vbo_faces = glGenBuffers(1)
         self.vbo_normals = glGenBuffers(1)
-        self.vbo_uvs = glGenBuffers(1)  # Novo VBO para coordenadas UV
+        self.vbo_uvs = glGenBuffers(1)
 
         self.init_vbo()
+
+        if self.texture:
+            self.load_texture(self.texture)
 
     def create_sphere(self, radius, subdivisions):
         t = (1.0 + np.sqrt(5.0)) / 2.0
@@ -120,7 +124,29 @@ class Sphere(Object):
 
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
         glBufferData(GL_ARRAY_BUFFER, self.uvs.nbytes, self.uvs, GL_STATIC_DRAW)
+        
+    def to_dict(self):
+        return {
+            'type': 'sphere',
+            'position': self.position,
+            'rotation': self.transform.rotation,
+            'scale': self.transform.scale,
+            'radius': self.radius,
+            'subdivisions': self.subdivisions,
+            'texture': self.texture
+        }
 
+    @classmethod
+    def from_dict(cls, data):
+        radius = data['radius']
+        subdivisions = data['subdivisions']
+        texture = data.get('texture')
+        sphere = cls(radius=radius, subdivisions=subdivisions, texture=texture)
+        sphere.position = data['position']
+        sphere.transform.rotation = data['rotation']
+        sphere.transform.scale = data['scale']
+        return sphere
+    
     def draw(self):
         glPushMatrix()
         glTranslatef(*self.position)

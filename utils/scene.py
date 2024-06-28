@@ -1,3 +1,5 @@
+import json
+import os
 import pygame
 from objects import Mesh
 from utils.camera import Camera
@@ -52,6 +54,41 @@ class Scene:
         self.fps = 0
 
         #self.objects.append(Mesh([0, 0, 0], 'objects/mesh/male.obj', True))
+    
+    def save_scene(self, file_path):
+        scene_data = {
+            'objects': [obj.to_dict() for obj in self.objects]
+        }
+        with open(file_path, 'w') as f:
+            json.dump(scene_data, f, indent=4)
+
+    def load_scene(self, file_path):
+        if not os.path.exists(file_path):
+            print(f"File not found: {file_path}")
+            return
+
+        with open(file_path, 'r') as f:
+            scene_data = json.load(f)
+
+        self.objects = []
+        for obj_data in scene_data['objects']:
+            if obj_data['type'] == 'cube':
+                obj = Cube.from_dict(obj_data)
+            elif obj_data['type'] == 'sphere':
+                obj = Sphere.from_dict(obj_data)
+            elif obj_data['type'] == 'cone':
+                obj = Cone.from_dict(obj_data)
+            elif obj_data['type'] == 'cylinder':
+                obj = Cylinder.from_dict(obj_data)
+            elif obj_data['type'] == 'halfsphere':
+                obj = HalfSphere.from_dict(obj_data)
+            elif obj_data['type'] == 'pyramid':
+                obj = Pyramid.from_dict(obj_data)
+            else:
+                print(f"Unknown object type: {obj_data['type']}")
+                continue
+
+            self.objects.append(obj)
 
     def add_object(self, object_type):
         if object_type == 'cube':

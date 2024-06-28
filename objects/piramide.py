@@ -91,6 +91,30 @@ class Pyramid(Object):
             self.texture_loaded = True
             self.texture = file_path
 
+    def to_dict(self):
+        return {
+            'type': 'pyramid',
+            'position': self.position,
+            'rotation': self.transform.rotation,
+            'scale': self.scale_factor,
+            'base_length': self.base_length,
+            'height': self.height,
+            'texture': self.texture
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        base_length = data['base_length']
+        height = data['height']
+        texture = data.get('texture')
+        pyramid = cls(base_length=base_length, height=height)
+        pyramid.position = data['position']
+        pyramid.transform.rotation = data['rotation']
+        pyramid.scale_factor = data['scale']
+        if texture:
+            pyramid.load_texture(texture)
+        return pyramid
+
     def draw(self):
         glPushMatrix()
         glTranslatef(*self.position)

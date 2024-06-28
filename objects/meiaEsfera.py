@@ -23,7 +23,7 @@ class HalfSphere(Object):
         self.vbo_vertices = glGenBuffers(1)
         self.vbo_faces = glGenBuffers(1)
         self.vbo_normals = glGenBuffers(1)
-        self.vbo_uvs = glGenBuffers(1)  # Novo VBO para coordenadas UV
+        self.vbo_uvs = glGenBuffers(1)  # New VBO for UV coordinates
 
         self.init_vbo()
 
@@ -97,6 +97,34 @@ class HalfSphere(Object):
         # Upload UVs to VBO
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
         glBufferData(GL_ARRAY_BUFFER, self.uvs.nbytes, self.uvs, GL_STATIC_DRAW)
+
+    def to_dict(self):
+        data = {
+            'type': 'halfsphere',
+            'position': self.position,
+            'rotation': self.transform.rotation,
+            'scale': self.scale_factor,
+            'radius': self.radius,
+            'stacks': self.stacks,
+            'slices': self.slices
+        }
+        if self.texture:
+            data['texture'] = self.texture
+        return data
+
+    @classmethod
+    def from_dict(cls, data):
+        radius = data['radius']
+        stacks = data['stacks']
+        slices = data['slices']
+        texture = data.get('texture')
+        half_sphere = cls(radius=radius, stacks=stacks, slices=slices)
+        half_sphere.position = data['position']
+        half_sphere.transform.rotation = data['rotation']
+        half_sphere.scale_factor = data['scale']
+        if texture:
+            half_sphere.load_texture(texture)
+        return half_sphere
 
     def draw(self):
         glPushMatrix()

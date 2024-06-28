@@ -1,16 +1,21 @@
 from objects import Object
+from objects import Object
 from OpenGL.GL import *
 from PIL import Image
 import numpy as np
+from utils.transform import Transform  # Certifique-se de importar corretamente a classe Transform
 
 class Cube(Object):
-    def __init__(self):
+    def __init__(self, position=None, rotation=None, scale=None, shear=None, texture=None):
         super().__init__([0, 0, 0])
+        self.transform = Transform(position, rotation, scale)
+        self.shear = shear  # Adicione o atributo shear
         self.selected = False
         self.vertices = self.generate_vertices()
         self.faces = self.generate_faces()
         self.uvs = self.generate_uvs()
-        self.scale_factor = [1.0, 1.0, 1.0]
+        self.normals = self.calculate_normals()
+        self.texture = texture
         self.texture_id = None
         self.texture_loaded = False
 
@@ -20,6 +25,9 @@ class Cube(Object):
         self.vbo_uvs = glGenBuffers(1)
 
         self.init_vbo()
+        
+        if self.texture:
+            self.load_texture(self.texture)  # Carrega a textura se o caminho estiver disponível
 
     def generate_vertices(self):
         vertices = [
@@ -102,25 +110,42 @@ class Cube(Object):
         ]
         return np.array(uvs, dtype=np.float32)
 
+    def to_dict(self):
+        return {
+            'type': 'cube',
+            'position': self.transform.position,
+            'rotation': self.transform.rotation,
+            'scale': self.transform.scale,
+            'texture': self.texture,
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        position = data['position']
+        rotation = data['rotation']
+        scale = data['scale']
+        texture = data.get('texture')  # Usar get para evitar KeyError caso a chave não exista
+        return cls(position=position, rotation=rotation, scale=scale, texture=texture)
+
     def load_texture(self, file_path):
-        if not self.texture_loaded:
-            image = Image.open(file_path)
-            image = image.transpose(Image.FLIP_TOP_BOTTOM)
-            image_data = np.array(list(image.getdata()), np.uint8)
+        image = Image.open(file_path)
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+        image_data = np.array(list(image.getdata()), np.uint8)
 
-            if self.texture_id:
-                glDeleteTextures([self.texture_id])
+        # Remove a textura anterior se existir
+        if self.texture_loaded:
+            glDeleteTextures([self.texture_id])
 
-            self.texture_id = glGenTextures(1)
-            glBindTexture(GL_TEXTURE_2D, self.texture_id)
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image_data)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        self.texture_id = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, self.texture_id)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image_data)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
 
-            self.texture_loaded = True
-            self.texture = file_path
+        self.texture_loaded = True
+        self.texture = file_path
 
     def init_vbo(self):
         # Upload vertices to VBO
@@ -135,15 +160,33 @@ class Cube(Object):
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
         glBufferData(GL_ARRAY_BUFFER, self.uvs.nbytes, self.uvs, GL_STATIC_DRAW)
 
+    def calculate_normals(self):
+        normals = np.zeros_like(self.vertices)
+
+        # Faces frontais
+        normals[0:4] = [0, 0, 1]
+        # Faces traseiras
+        normals[4:8] = [0, 0, -1]
+        # Faces laterais esquerdas
+        normals[8:12] = [-1, 0, 0]
+        # Faces laterais direitas
+        normals[12:16] = [1, 0, 0]
+        # Faces superiores
+        normals[16:20] = [0, 1, 0]
+        # Faces inferiores
+        normals[20:24] = [0, -1, 0]
+
+        return normals.astype(np.float32)
+
     def draw(self):
         glPushMatrix()
-        glTranslatef(*self.position)
+        glTranslatef(*self.transform.position)
         
         glRotatef(self.transform.rotation[0], 1, 0, 0)
         glRotatef(self.transform.rotation[1], 0, 1, 0)
         glRotatef(self.transform.rotation[2], 0, 0, 1)
 
-        glScalef(*self.scale_factor)
+        glScalef(*self.transform.scale)
         
         if self.selected:
             glColor3f(1.0, 0.5, 0.0)
@@ -196,22 +239,22 @@ class Cube(Object):
     def scale(self, factor, axis):
         min_scale = 0.1
         if axis == (1, 0, 0):
-            new_scale = max(min_scale, self.scale_factor[0] + factor)
-            self.scale_factor[0] = new_scale
+            new_scale = max(min_scale, self.transform.scale[0] + factor)
+            self.transform.scale[0] = new_scale
         elif axis == (0, 1, 0):
-            new_scale = max(min_scale, self.scale_factor[1] + factor)
-            self.scale_factor[1] = new_scale
+            new_scale = max(min_scale, self.transform.scale[1] + factor)
+            self.transform.scale[1] = new_scale
         elif axis == (0, 0, 1):
-            new_scale = max(min_scale, self.scale_factor[2] + factor)
-            self.scale_factor[2] = new_scale
+            new_scale = max(min_scale, self.transform.scale[2] + factor)
+            self.transform.scale[2] = new_scale
 
     def translate(self, distance, axis):
         if axis == (1, 0, 0):
-            self.position[0] += distance
+            self.transform.position[0] += distance
         elif axis == (0, 1, 0):
-            self.position[1] += distance
+            self.transform.position[1] += distance
         elif axis == (0, 0, 1):
-            self.position[2] += distance
+            self.transform.position[2] += distance
 
     def shear(self, shear_factor, plane):
         shear_matrix = np.identity(4)
@@ -228,12 +271,10 @@ class Cube(Object):
         elif plane == 'zy':
             shear_matrix[2][1] = shear_factor
 
-        # Aplica a transformação de shear nos vértices
         for i in range(len(self.vertices)):
-            vertex = np.append(self.vertices[i], 1)  # Adiciona 1 para coordenadas homogêneas
+            vertex = np.append(self.vertices[i], 1)
             transformed_vertex = np.dot(shear_matrix, vertex)
-            self.vertices[i] = transformed_vertex[:3]  # Remove a coordenada homogênea
+            self.vertices[i] = transformed_vertex[:3]
 
-        # Atualiza o VBO com os vértices transformados
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
         glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
