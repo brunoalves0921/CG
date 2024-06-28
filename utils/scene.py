@@ -19,9 +19,9 @@ class Scene:
         pygame.init()
         self.display = (1280, 720)
         pygame.display.set_mode(self.display, DOUBLEBUF | OPENGL)
-        gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 50.0)
+        gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
         glTranslatef(0.0, 0.0, -5)
-        glClearColor(0.2, 0.2, 0.2, 1.0)
+        glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_DEPTH_TEST)
         glEnableClientState(GL_VERTEX_ARRAY)
         
@@ -32,15 +32,15 @@ class Scene:
         glEnable(GL_COLOR_MATERIAL)
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
         
-        # Configuração da luz
-        light_position = [1, 1, 1, 0]
-        glLightfv(GL_LIGHT0, GL_POSITION, light_position)
-        light_ambient = [0.1, 0.1, 0.1, 1.0]
-        glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient)
-        light_diffuse = [1.0, 1.0, 1.0, 1.0]
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse)
-        light_specular = [1.0, 1.0, 1.0, 1.0]
-        glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular)
+        # # Configuração da luz
+        # light_position = [1, 1, 1, 0]
+        # glLightfv(GL_LIGHT0, GL_POSITION, light_position)
+        # light_ambient = [0.1, 0.1, 0.1, 1.0]
+        # glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient)
+        # light_diffuse = [1.0, 1.0, 1.0, 1.0]
+        # glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse)
+        # light_specular = [1.0, 1.0, 1.0, 1.0]
+        # glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular)
         
         self.camera = Camera()
         self.overview_camera = Camera()
@@ -121,7 +121,7 @@ class Scene:
         self.eventListener.run()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
-        gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 50.0)
+        gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
         glTranslatef(self.camera.position[0], self.camera.position[1], self.camera.zoom)
         glPushMatrix()
         glRotatef(self.camera.rotation[0], 1, 0, 0)
@@ -189,7 +189,7 @@ class Scene:
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
         glLoadIdentity()
-        gluPerspective(45, overview_width / overview_height, 0.1, 50.0)
+        gluPerspective(45, overview_width / overview_height, 0.1, 10000.0)
         glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
         glLoadIdentity()
@@ -220,7 +220,7 @@ class Scene:
         viewport = glGetIntegerv(GL_VIEWPORT)
         # Diminuir a área de seleção para 1x1 pixels para maior precisão
         gluPickMatrix(x, viewport[3] - y, 1, 1, viewport)
-        gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 50.0)
+        gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         glTranslatef(self.camera.position[0], self.camera.position[1], self.camera.zoom)

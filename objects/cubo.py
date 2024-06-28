@@ -6,7 +6,7 @@ import numpy as np
 from utils.transform import Transform  # Certifique-se de importar corretamente a classe Transform
 
 class Cube(Object):
-    def __init__(self, position=None, rotation=None, scale=None, shear=None, texture=None):
+    def __init__(self, position=[0.0, 0.0, 0.0], rotation=[0.0, 0.0, 0.0], scale=[1.0, 1.0, 1.0], shear=None, texture=None):
         super().__init__([0, 0, 0])
         self.transform = Transform(position, rotation, scale)
         self.shear = shear  # Adicione o atributo shear
