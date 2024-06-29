@@ -94,7 +94,11 @@ class Sphere(Object):
 
     def load_texture(self, file_path):
         if not self.texture_loaded:
-            image = Image.open(file_path)
+            try:
+                image = Image.open(file_path)
+            except FileNotFoundError:
+                print(f"Textura não encontrada: {file_path}")
+                return
             image = image.transpose(Image.FLIP_TOP_BOTTOM)
             image_data = np.array(list(image.getdata()), np.uint8)
 

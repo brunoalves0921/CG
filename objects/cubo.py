@@ -6,7 +6,7 @@ import numpy as np
 from utils.transform import Transform  # Certifique-se de importar corretamente a classe Transform
 
 class Cube(Object):
-    def __init__(self, position=[0.0, 0.0, 0.0], rotation=[0.0, 0.0, 0.0], scale=[1.0, 1.0, 1.0], shear=None, texture=None):
+    def __init__(self, position=None, rotation=None, scale=None, shear=None, texture=None):
         super().__init__([0, 0, 0])
         self.transform = Transform(position, rotation, scale)
         self.shear = shear  # Adicione o atributo shear
@@ -128,7 +128,11 @@ class Cube(Object):
         return cls(position=position, rotation=rotation, scale=scale, texture=texture)
 
     def load_texture(self, file_path):
-        image = Image.open(file_path)
+        try:
+            image = Image.open(file_path)
+        except FileNotFoundError:
+            print(f"Textura não encontrada: {file_path}")
+            return
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
         image_data = np.array(list(image.getdata()), np.uint8)
 
@@ -215,8 +219,15 @@ class Cube(Object):
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
         
+        # Habilita o cullface para cullar as faces de trás
+        glEnable(GL_CULL_FACE)
+        glCullFace(GL_BACK)
+
         for face in range(6):
             glDrawElements(GL_QUADS, 4, GL_UNSIGNED_INT, ctypes.c_void_p(face * 4 * 4))
+
+        # Desabilita o cullface após o desenho
+        glDisable(GL_CULL_FACE)
 
         glDisableClientState(GL_VERTEX_ARRAY)
         glDisableClientState(GL_TEXTURE_COORD_ARRAY)
@@ -237,7 +248,7 @@ class Cube(Object):
             self.transform.rotation[2] += angle
 
     def scale(self, factor, axis):
-        min_scale = 0.1
+        min_scale = 0.05
         if axis == (1, 0, 0):
             new_scale = max(min_scale, self.transform.scale[0] + factor)
             self.transform.scale[0] = new_scale
@@ -255,26 +266,3 @@ class Cube(Object):
             self.transform.position[1] += distance
         elif axis == (0, 0, 1):
             self.transform.position[2] += distance
-
-    def shear(self, shear_factor, plane):
-        shear_matrix = np.identity(4)
-        if plane == 'xy':
-            shear_matrix[0][1] = shear_factor
-        elif plane == 'xz':
-            shear_matrix[0][2] = shear_factor
-        elif plane == 'yx':
-            shear_matrix[1][0] = shear_factor
-        elif plane == 'yz':
-            shear_matrix[1][2] = shear_factor
-        elif plane == 'zx':
-            shear_matrix[2][0] = shear_factor
-        elif plane == 'zy':
-            shear_matrix[2][1] = shear_factor
-
-        for i in range(len(self.vertices)):
-            vertex = np.append(self.vertices[i], 1)
-            transformed_vertex = np.dot(shear_matrix, vertex)
-            self.vertices[i] = transformed_vertex[:3]
-
-        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
-        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)

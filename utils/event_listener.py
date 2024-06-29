@@ -37,8 +37,8 @@ class EventListener:
             self.rotate_mode = True
         elif event.key == K_t:
             self.translate_mode = True
-        elif event.key == K_c:
-            self.shear_mode = True
+        # elif event.key == K_c:
+        #     self.shear_mode = True
         elif event.key in [K_F1, K_F2, K_F3, K_F4, K_F5, K_F6]:
             self.set_preset_position(event.key)
         elif event.key == K_o:
@@ -109,7 +109,7 @@ class EventListener:
         value_rotate = 5 * direction
         value_translate = 0.1 * direction
         value_scale = 0.05 * direction
-        min_scale = 0.1
+        min_scale = 0.05
 
         if any(obj.selected for obj in self.scene.objects):
             for obj in self.scene.objects:

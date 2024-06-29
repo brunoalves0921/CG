@@ -17,11 +17,12 @@ class Scene:
         self.objects = []
         self.message_queue = message_queue
         pygame.init()
-        self.display = (1280, 720)
+        self.display = (1920, 1030)
         pygame.display.set_mode(self.display, DOUBLEBUF | OPENGL)
+        glEnable(GL_MULTISAMPLE)
         gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
         glTranslatef(0.0, 0.0, -5)
-        glClearColor(0.0, 0.0, 0.0, 1.0)
+        glClearColor(0.53, 0.81, 0.92, 1.0)
         glEnable(GL_DEPTH_TEST)
         glEnableClientState(GL_VERTEX_ARRAY)
         
@@ -53,7 +54,7 @@ class Scene:
         self.clock = pygame.time.Clock()
         self.fps = 0
 
-        #self.objects.append(Mesh([0, 0, 0], 'objects/mesh/male.obj', True))
+        #self.objects.append(Mesh([0, 0, 0], 'objects/mesh/cube.obj', True))
     
     def save_scene(self, file_path):
         scene_data = {
