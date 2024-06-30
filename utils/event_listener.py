@@ -1,6 +1,8 @@
 import pygame
 from pygame.locals import KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t, K_c, K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_o, K_p, K_DELETE
 from OpenGL.GL import *
+from objects.mesh.mesh import Mesh
+
 
 class EventListener:
     def __init__(self, scene):
@@ -123,25 +125,53 @@ class EventListener:
             obj.shear(value_scale, 'xy')
         elif ctrl_pressed:
             if self.rotate_mode:
-                obj.rotate(value_rotate, (1, 0, 0))
+                if isinstance(obj, Mesh):
+                    obj.rotate_mesh(value_rotate, (1, 0, 0))
+                else:
+                    obj.rotate(value_rotate, (1, 0, 0))
             elif self.translate_mode:
-                obj.translate(value_translate, (1, 0, 0))
+                if isinstance(obj, Mesh):
+                    obj.translate_mesh(value_translate, (1, 0, 0))
+                else:
+                    obj.translate(value_translate, (1, 0, 0))
             else:
-                self.apply_scale(obj, value_scale, min_scale, (1, 0, 0))
+                if isinstance(obj, Mesh):
+                    obj.scale_mesh(value_scale, (1, 0, 0))
+                else:
+                    self.apply_scale(obj, value_scale, min_scale, (1, 0, 0))
         if shift_pressed:
             if self.rotate_mode:
-                obj.rotate(value_rotate, (0, 1, 0))
+                if isinstance(obj, Mesh):
+                    obj.rotate_mesh(value_rotate, (0, 1, 0))
+                else:
+                    obj.rotate(value_rotate, (0, 1, 0))
             elif self.translate_mode:
-                obj.translate(value_translate, (0, 1, 0))
+                if isinstance(obj, Mesh):
+                    obj.translate_mesh(value_translate, (0, 1, 0))
+                else:
+                    obj.translate(value_translate, (0, 1, 0))
             else:
-                self.apply_scale(obj, value_scale, min_scale, (0, 1, 0))
+                if isinstance(obj, Mesh):
+                    obj.scale_mesh(value_scale, (0, 1, 0))
+                else:
+                    self.apply_scale(obj, value_scale, min_scale, (0, 1, 0))
         if alt_pressed:
             if self.rotate_mode:
-                obj.rotate(value_rotate, (0, 0, 1))
+                if isinstance(obj, Mesh):
+                    obj.rotate_mesh(value_rotate, (0, 0, 1))
+                else:
+                    obj.rotate(value_rotate, (0, 0, 1))
             elif self.translate_mode:
-                obj.translate(value_translate, (0, 0, 1))
+                if isinstance(obj, Mesh):
+                    obj.translate_mesh(value_translate, (0, 0, 1))
+                else:
+                    obj.translate(value_translate, (0, 0, 1))
             else:
-                self.apply_scale(obj, value_scale, min_scale, (0, 0, 1))
+                if isinstance(obj, Mesh):
+                    obj.scale_mesh(value_scale, (0, 0, 1))
+                else:
+                    self.apply_scale(obj, value_scale, min_scale, (0, 0, 1))
+
 
     def apply_scale(self, obj, value_scale, min_scale, axis):
         current_scale = obj.transform.scale

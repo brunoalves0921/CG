@@ -1,11 +1,10 @@
 import json
 import os
 import pygame
-from objects import Mesh
+from objects import Mesh, Cube, Sphere, Cone, Cylinder, HalfSphere, Pyramid
 from utils.camera import Camera
 from utils.event_listener import EventListener
 from utils.sidebar import Sidebar
-from objects import Cube, Sphere, Cone, Cylinder, HalfSphere, Pyramid
 from objects.eixos import draw_axes
 from pygame.locals import DOUBLEBUF, OPENGL
 from OpenGL.GL import *
@@ -17,12 +16,16 @@ class Scene:
         self.objects = []
         self.message_queue = message_queue
         pygame.init()
-        self.display = (1920, 1030)
+        self.display = (1620, 830)
+        pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLESAMPLES, 4)  # Ativar MSAA
         pygame.display.set_mode(self.display, DOUBLEBUF | OPENGL)
         glEnable(GL_MULTISAMPLE)
+        glEnable(GL_POLYGON_SMOOTH)
+        glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)
         gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
         glTranslatef(0.0, 0.0, -5)
-        glClearColor(0.53, 0.81, 0.92, 1.0)
+        glClearColor(0.0, 0.0, 0.0, 1.0)
+        
         glEnable(GL_DEPTH_TEST)
         glEnableClientState(GL_VERTEX_ARRAY)
         
@@ -32,16 +35,6 @@ class Scene:
         glEnable(GL_NORMALIZE)
         glEnable(GL_COLOR_MATERIAL)
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
-        
-        # # Configuração da luz
-        # light_position = [1, 1, 1, 0]
-        # glLightfv(GL_LIGHT0, GL_POSITION, light_position)
-        # light_ambient = [0.1, 0.1, 0.1, 1.0]
-        # glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient)
-        # light_diffuse = [1.0, 1.0, 1.0, 1.0]
-        # glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse)
-        # light_specular = [1.0, 1.0, 1.0, 1.0]
-        # glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular)
         
         self.camera = Camera()
         self.overview_camera = Camera()
@@ -54,8 +47,6 @@ class Scene:
         self.clock = pygame.time.Clock()
         self.fps = 0
 
-        #self.objects.append(Mesh([0, 0, 0], 'objects/mesh/cube.obj', True))
-    
     def save_scene(self, file_path):
         scene_data = {
             'objects': [obj.to_dict() for obj in self.objects]
@@ -85,6 +76,8 @@ class Scene:
                 obj = HalfSphere.from_dict(obj_data)
             elif obj_data['type'] == 'pyramid':
                 obj = Pyramid.from_dict(obj_data)
+            elif obj_data['type'] == 'mesh':
+                obj = Mesh.from_dict(obj_data)  # Crie um método from_dict na classe Mesh
             else:
                 print(f"Unknown object type: {obj_data['type']}")
                 continue
@@ -104,6 +97,9 @@ class Scene:
             obj = HalfSphere()
         elif object_type == 'pyramid':
             obj = Pyramid()
+        elif object_type == 'mesh':
+            self.add_mesh()
+            return  # Não adiciona o objeto diretamente
         else:
             print(f"Unknown object type: {object_type}")
             return
@@ -207,7 +203,7 @@ class Scene:
         glPopAttrib()
 
     def select_object(self, x, y):
-        #aumente o tamanho do buffer para o necessário para armazenar todos os objetos
+        # Aumente o tamanho do buffer para o necessário para armazenar todos os objetos
         buffer_size = len(self.objects) * 4 * 4
         print(f"Buffer size: {buffer_size}")
         select_buffer = glSelectBuffer(buffer_size)
@@ -233,7 +229,10 @@ class Scene:
 
         for i, obj in enumerate(self.objects):
             glLoadName(i + 1)
-            obj.draw()
+            if isinstance(obj, Mesh):
+                obj.draw()  # Draw mesh objects
+            else:
+                obj.draw()
 
         glPopMatrix()
         glMatrixMode(GL_PROJECTION)

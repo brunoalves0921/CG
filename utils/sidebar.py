@@ -3,7 +3,7 @@ import tkinter as tk
 import OpenGL.GLUT as glut
 from tkinter import filedialog
 from OpenGL.GL import *
-from objects import Cube, Sphere  # Substitua pelo caminho correto onde as classes Cube e Sphere estão definidas
+from objects import Cube, Sphere, Mesh  # Certifique-se de importar a classe Mesh
 from math import cos, sin
 
 class Sidebar:
@@ -15,7 +15,8 @@ class Sidebar:
             {'label': 'Cilindro', 'action': 'cylinder'},
             {'label': 'Meia Esfera', 'action': 'halfsphere'},
             {'label': 'Pirâmide', 'action': 'pyramid'},
-            {'label': 'Adicionar Textura', 'action': 'add_texture'}  # Novo botão
+            {'label': 'Adicionar Textura', 'action': 'add_texture'},
+            {'label': 'Adicionar OBJ', 'action': 'add_obj'}  # Novo botão para adicionar .obj
         ]
         self.width = 200
         self.height = 50
@@ -71,7 +72,6 @@ class Sidebar:
         glRasterPos2f(x - width // 2, y - height // 2 - text_y_offset)
         glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, text_data)
 
-
     def check_click(self, x, y, scene):
         if not self.visible:
             return None
@@ -82,6 +82,8 @@ class Sidebar:
                 action = button['action']
                 if action == 'add_texture':
                     self.add_texture(scene)
+                elif action == 'add_obj':
+                    self.add_obj(scene)
                 else:
                     return action
         return None
@@ -106,6 +108,20 @@ class Sidebar:
         )
         if file_path:
             selected_object.load_texture(file_path)
+
+    def add_obj(self, scene):
+        # Abrir o menu do Tkinter para escolher o arquivo .obj
+        root = tk.Tk()
+        root.withdraw()  # Esconde a janela principal do Tkinter
+        file_path = filedialog.askopenfilename(
+            filetypes=[("OBJ files", "*.obj"), ("All files", "*.*")]
+        )
+        if file_path:
+            # Adicionar o novo objeto .obj à cena
+            # Aqui você deve escolher qual tipo de objeto criar e adicionar à cena
+            # Exemplo: Adicionando um Mesh com um arquivo OBJ
+            new_obj = Mesh(position=[0, 0, 0], filename=file_path, rotation=[0, 0, 0], scale=[1, 1, 1])
+            scene.objects.append(new_obj)
 
     def update_hover(self, mouse_x, mouse_y):
         if not self.visible:
