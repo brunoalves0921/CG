@@ -70,26 +70,45 @@ class Cylinder(Object):
     def load_texture(self, file_path):
         if not self.texture_loaded:
             try:
+                # Carregar a imagem
                 image = Image.open(file_path)
-            except FileNotFoundError:
-                print(f"Textura não encontrada: {file_path}")
-                return
-            image = image.transpose(Image.FLIP_TOP_BOTTOM)
-            image_data = np.array(list(image.getdata()), np.uint8)
-
-            if self.texture_id:
-                glDeleteTextures([self.texture_id])
-
-            self.texture_id = glGenTextures(1)
-            glBindTexture(GL_TEXTURE_2D, self.texture_id)
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image_data)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-
-            self.texture_loaded = True
-            self.texture = file_path
+                # Converter a imagem para RGB (no caso de imagens em outros formatos)
+                image = image.convert("RGB")
+                # Obter dados da imagem
+                image_data = np.array(image, dtype=np.uint8)
+                
+                # Verificar se a textura já foi carregada
+                if self.texture_id:
+                    glDeleteTextures([self.texture_id])
+                
+                # Gerar e vincular a nova textura
+                self.texture_id = glGenTextures(1)
+                glBindTexture(GL_TEXTURE_2D, self.texture_id)
+                
+                # Definir os parâmetros da textura
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+                
+                # Carregar a imagem para a textura
+                glTexImage2D(
+                    GL_TEXTURE_2D, 
+                    0, 
+                    GL_RGB, 
+                    image.width, 
+                    image.height, 
+                    0, 
+                    GL_RGB, 
+                    GL_UNSIGNED_BYTE, 
+                    image_data
+                )
+                
+                # Marcar a textura como carregada
+                self.texture_loaded = True
+                self.texture = file_path
+            except Exception as e:
+                print(f"Erro ao carregar textura: {e}")
 
     def to_dict(self):
         return {

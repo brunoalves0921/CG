@@ -93,21 +93,22 @@ class Sphere(Object):
         return midpoint_index
 
     def load_texture(self, file_path):
-        if not self.texture_loaded:
-            try:
-                image = Image.open(file_path)
-            except FileNotFoundError:
-                print(f"Textura não encontrada: {file_path}")
-                return
-            image = image.transpose(Image.FLIP_TOP_BOTTOM)
-            image_data = np.array(list(image.getdata()), np.uint8)
+        try:
+            # Abre a imagem e converte para RGB (ou RGBA se necessário)
+            image = Image.open(file_path)
+            image = image.convert("RGBA") if image.mode != 'RGBA' else image
+            
+            image_data = np.array(image, dtype=np.uint8)
+            mode = GL_RGBA if image.mode == 'RGBA' else GL_RGB
 
+            # Remove a textura anterior se existir
             if self.texture_id:
                 glDeleteTextures([self.texture_id])
 
+            # Gera e configura a nova textura
             self.texture_id = glGenTextures(1)
             glBindTexture(GL_TEXTURE_2D, self.texture_id)
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image_data)
+            glTexImage2D(GL_TEXTURE_2D, 0, mode, image.width, image.height, 0, mode, GL_UNSIGNED_BYTE, image_data)
             glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
             glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
             glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
@@ -115,6 +116,10 @@ class Sphere(Object):
 
             self.texture_loaded = True
             self.texture = file_path
+        except FileNotFoundError:
+            print(f"Textura não encontrada: {file_path}")
+        except Exception as e:
+            print(f"Erro ao carregar textura: {e}")
 
     def init_vbo(self):
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)

@@ -258,6 +258,26 @@
             "height": 2,
             "slices": 20,
             "texture": "C:/Users/brunoPC/Downloads/Photoreal_Grass_05-512x512.png"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                7.39999999999999,
+                2.7755575615628914e-17,
+                -6.099999999999994
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "scale": [
+                0.4499999999999996,
+                0.4499999999999996,
+                0.4499999999999996
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Downloads/House/House.obj"
         }
     ]
 }
