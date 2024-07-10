@@ -15,6 +15,7 @@ class Sidebar:
             {'label': 'Cilindro', 'action': 'cylinder'},
             {'label': 'Meia Esfera', 'action': 'halfsphere'},
             {'label': 'Pirâmide', 'action': 'pyramid'},
+            {'label': 'Luz', 'action': 'light'},
             {'label': 'Adicionar Textura', 'action': 'add_texture'},
             {'label': 'Adicionar OBJ', 'action': 'add_obj'}  # Novo botão para adicionar .obj
         ]

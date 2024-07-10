@@ -1,3 +1,297 @@
 {
-    "objects": []
-}
+    "objects": [
+        {
+            "type": "mesh",
+            "position": [
+                43.60000000000002,
+                -3.1000000000000014,
+                0
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "scale": [
+                0.11000000000000001,
+                0.060000000000000005,
+                0.11000000000000003
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/lowpoly_road/1229_Road.obj"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                21.599999999999994,
+                -3.1000000000000014,
+                0
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "scale": [
+                0.11000000000000008,
+                0.060000000000000005,
+                0.11000000000000003
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/lowpoly_road/1229_Road.obj"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                -0.4,
+                -3.1000000000000014,
+                0
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "scale": [
+                0.11000000000000008,
+                0.060000000000000005,
+                0.11000000000000003
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/lowpoly_road/1229_Road.obj"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                -22.40000000000005,
+                -3.1000000000000014,
+                0
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "scale": [
+                0.11000000000000008,
+                0.060000000000000005,
+                0.11000000000000003
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/lowpoly_road/1229_Road.obj"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                -44.40000000000005,
+                -3.1000000000000014,
+                0
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "scale": [
+                0.11000000000000008,
+                0.060000000000000005,
+                0.11000000000000003
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/lowpoly_road/1229_Road.obj"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                0,
+                -3.3000000000000016,
+                -15.199999999999962
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "scale": [
+                0.6999999999999997,
+                0.6999999999999997,
+                0.6999999999999997
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/farm_house_lowpoly/FarmHouse.obj"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                -13.199999999999969,
+                -3.3000000000000016,
+                -11.899999999999974
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "scale": [
+                1,
+                1,
+                1
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/lowpoly_arvoretop/PollardWillowTree.obj"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                0.09999999999999998,
+                -4.899999999999999,
+                0
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "scale": [
+                400.00000000000006,
+                8.599999999999987,
+                400.35
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/lowpoly_terrain/GrassPlatform.obj"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                4.000000000000002,
+                -2.7000000000000006,
+                0
+            ],
+            "rotation": [
+                0,
+                -90,
+                0
+            ],
+            "scale": [
+                0.6999999999999997,
+                0.6999999999999997,
+                0.6999999999999997
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/Car-Model/Convertible.obj"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                -6.699999999999992,
+                -2.800000000000001,
+                5.1999999999999975
+            ],
+            "rotation": [
+                0,
+                90,
+                0
+            ],
+            "scale": [
+                0.09999999999999969,
+                0.1499999999999997,
+                0.34999999999999964
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/lowpoly_poste/TelephonePole_175.obj"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                -38.000000000000306,
+                -2.800000000000001,
+                5.1999999999999975
+            ],
+            "rotation": [
+                0,
+                90,
+                0
+            ],
+            "scale": [
+                0.09999999999999969,
+                0.1499999999999997,
+                0.34999999999999964
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/lowpoly_poste/TelephonePole_175.obj"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                16.399999999999963,
+                -3.300000000000001,
+                -15.399999999999961
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "scale": [
+                0.7499999999999998,
+                0.7499999999999998,
+                0.8999999999999999
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/lowpoly_arvoretop2/ElmTree.OBJ"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                -48.900000000000425,
+                -3.300000000000001,
+                -14.199999999999966
+            ],
+            "rotation": [
+                0,
+                30,
+                0
+            ],
+            "scale": [
+                0.8499999999999999,
+                0.8499999999999999,
+                0.7499999999999998
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/lowpoly_arvoretop3/OrangeTree.obj"
+        },
+        {
+            "type": "mesh",
+            "position": [
+                -30.99999999999993,
+                -3.2000000000000015,
+                -9.99999999999998
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "scale": [
+                0.8999999999999999,
+                0.8499999999999999,
+                1
+            ],
+            "texture": null,
+            "filename": "C:/Users/brunoPC/Documents/CG/objects/mesh/lowpoly_casacomgaragem/HouseWithDriveway.obj"
+        },
+        {
+            "type": "light_sphere",
+            "position": [
+                0,
+                0,
+                0
+            ],
+            "radius": 0.3,
+            "intensity": 10.0,
+            "color": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "direction": 

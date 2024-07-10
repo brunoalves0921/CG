@@ -3,6 +3,8 @@ from OBJFileLoader import OBJ
 from PIL import Image, UnidentifiedImageError
 import numpy as np
 from OpenGL.GL import *
+from OpenGL.GL.ARB.vertex_buffer_object import *
+from OpenGL.GLUT import *
 from utils.transform import Transform
 import os
 
@@ -23,10 +25,10 @@ class Mesh(Object):
         
         self.model = OBJ(filename, swapyz, default_mtl=default_mtl)
         
-        if self.texture and self.is_image_file(self.texture):
-            self.load_texture(self.texture)
-        else:
-            self.load_texture(default_mtl[0])
+        # if self.texture and self.is_image_file(self.texture):
+        #     self.load_texture(self.texture)
+        # else:
+        #     self.load_texture(default_mtl[0])
 
     def is_image_file(self, file_path):
         return file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.gif'))
@@ -115,7 +117,7 @@ class Mesh(Object):
             self.transform.rotation[2] += angle
 
     def scale_mesh(self, factor, axis):
-        min_scale = 0.05
+        min_scale = 0.01
         if axis == (1, 0, 0):
             new_scale = max(min_scale, self.transform.scale[0] + factor)
             self.transform.scale[0] = new_scale

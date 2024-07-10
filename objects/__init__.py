@@ -6,3 +6,4 @@ from objects.piramide import Pyramid
 from objects.cubo import Cube
 from objects.esfera import Sphere
 from objects.mesh.mesh import Mesh
+from objects.luz import LightSphere

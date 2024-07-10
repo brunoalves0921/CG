@@ -1,7 +1,7 @@
 import json
 import os
 import pygame
-from objects import Mesh, Cube, Sphere, Cone, Cylinder, HalfSphere, Pyramid
+from objects import Mesh, Cube, Sphere, Cone, Cylinder, HalfSphere, Pyramid, LightSphere
 from utils.camera import Camera
 from utils.event_listener import EventListener
 from utils.sidebar import Sidebar
@@ -17,14 +17,22 @@ class Scene:
         self.message_queue = message_queue
         pygame.init()
         self.display = (1620, 830)
-        pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLESAMPLES, 4)  # Ativar MSAA
+        pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLESAMPLES, 4)  # Enable MSAA
+        pygame.display.gl_set_attribute(pygame.GL_ACCELERATED_VISUAL, 1)  # Enable hardware acceleration
+        pygame.display.gl_set_attribute(pygame.GL_DOUBLEBUFFER, 1)  # Enable double buffering
+        pygame.display.gl_set_attribute(pygame.GL_DEPTH_SIZE, 24)  # Set depth buffer size to 24 bits
+        pygame.display.gl_set_attribute(pygame.GL_ALPHA_SIZE, 8)  # Set alpha buffer size to 8 bits
+        pygame.display.gl_set_attribute(pygame.GL_STENCIL_SIZE, 8)  # Set stencil buffer size to 8 bits
+        pygame.display.gl_set_attribute(pygame.GL_FRAMEBUFFER_SRGB_CAPABLE, 1)  # Enable sRGB color space
+        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)  # Use core profile
         pygame.display.set_mode(self.display, DOUBLEBUF | OPENGL)
         glEnable(GL_MULTISAMPLE)
         glEnable(GL_POLYGON_SMOOTH)
         glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)
         gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
         glTranslatef(0.0, 0.0, -5)
-        glClearColor(0.0, 0.0, 0.0, 1.0)
+
+        glClearColor(0.1, 0.1, 0.1, 1)
         
         glEnable(GL_DEPTH_TEST)
         glEnableClientState(GL_VERTEX_ARRAY)
@@ -76,6 +84,8 @@ class Scene:
                 obj = HalfSphere.from_dict(obj_data)
             elif obj_data['type'] == 'pyramid':
                 obj = Pyramid.from_dict(obj_data)
+            elif obj_data['type'] == 'light_sphere':
+                obj = LightSphere.from_dict(obj_data)
             elif obj_data['type'] == 'mesh':
                 obj = Mesh.from_dict(obj_data)  # Crie um método from_dict na classe Mesh
             else:
@@ -97,9 +107,11 @@ class Scene:
             obj = HalfSphere()
         elif object_type == 'pyramid':
             obj = Pyramid()
-        elif object_type == 'mesh':
-            self.add_mesh()
-            return  # Não adiciona o objeto diretamente
+        elif object_type == 'light':
+            obj = LightSphere()
+        # elif object_type == 'mesh':
+        #     self.add_mesh()
+        #     return  # Não adiciona o objeto diretamente
         else:
             print(f"Unknown object type: {object_type}")
             return
@@ -156,7 +168,7 @@ class Scene:
         self.display_fps()
 
         pygame.display.flip()
-        self.clock.tick(60)
+        self.clock.tick(999)
 
     def draw_overview(self):
         glPushAttrib(GL_VIEWPORT_BIT | GL_TRANSFORM_BIT)
