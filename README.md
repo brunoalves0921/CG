@@ -117,4 +117,4 @@ Universidade Federal do Ceará - Campus Quixadá.
 
 ## Créditos
 
-Agradecimentos especiais ao desenvolvedor [@jva411](https://github.com/jva411) que me auxiliou na resolução de diversas dúvidas durante o projeto.
+Agradecimentos especiais ao desenvolvedor [@jva411](https://github.com/jva411) que me auxiliou na explicação de diversas dúvidas durante o projeto.
