@@ -32,12 +32,11 @@ class Scene:
         gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
         glTranslatef(0.0, 0.0, -5)
 
-        glClearColor(0.1, 0.1, 0.1, 1)
+        glClearColor(0.53, 0.81, 0.98, 1.0)
         
         glEnable(GL_DEPTH_TEST)
         glEnableClientState(GL_VERTEX_ARRAY)
         
-        # Configurações de iluminação
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
         glEnable(GL_NORMALIZE)
@@ -54,13 +53,13 @@ class Scene:
 
         self.sidebar = Sidebar()
 
-        # FPS counter variables
         self.clock = pygame.time.Clock()
         self.fps = 0
 
     def save_scene(self, file_path):
         scene_data = {
-            'objects': [obj.to_dict() for obj in self.objects]
+            'objects': [obj.to_dict() for obj in self.objects],
+            'camera': self.camera.to_dict()  # Save camera position
         }
         with open(file_path, 'w') as f:
             json.dump(scene_data, f, indent=4)
@@ -90,12 +89,15 @@ class Scene:
             elif obj_data['type'] == 'light_sphere':
                 obj = LightSphere.from_dict(obj_data)
             elif obj_data['type'] == 'mesh':
-                obj = Mesh.from_dict(obj_data)  # Crie um método from_dict na classe Mesh
+                obj = Mesh.from_dict(obj_data)
             else:
                 print(f"Unknown object type: {obj_data['type']}")
                 continue
 
             self.objects.append(obj)
+
+        if 'camera' in scene_data:
+            self.camera.from_dict(scene_data['camera'])  # Load camera position
 
     def add_object(self, object_type):
         if object_type == 'cube':
@@ -112,27 +114,28 @@ class Scene:
             obj = Pyramid()
         elif object_type == 'light':
             obj = LightSphere()
-        # elif object_type == 'mesh':
-        #     self.add_mesh()
-        #     return  # Não adiciona o objeto diretamente
         else:
             print(f"Unknown object type: {object_type}")
             return
-        print(f"Adding object: {object_type}")
-        print(f"Total objects: {len(self.objects) + 1}")
 
         obj.position = [0, 0, 0]
-        obj.init_vbo()  # Initialize VBO for the object
+        obj.init_vbo()
         self.objects.append(obj)
 
     def start_main_loop(self):
+        saved_scene_file = 'saved_scene.json'
+        if os.path.exists(saved_scene_file):
+            self.load_scene(saved_scene_file)
+
         while True:
             self.run()
-        
+
+        self.save_scene(saved_scene_file)
+
     def setup_sunlight(self):
-        self.sunlight_position = [10.0, 10.0, 10.0, 1.0]  # Position of the light
+        self.sunlight_position = [10.0, 10.0, 10.0, 1.0]
         self.sunlight_ambient = [0.2, 0.2, 0.2, 1.0]
-        self.sunlight_diffuse = [0.8, 0.8, 0.8, 1.0]
+        self.sunlight_diffuse = [1.0, 1.0, 1.0, 1.0]
         self.sunlight_specular = [1.0, 1.0, 1.0, 1.0]
 
     def toggle_sunlight(self):
@@ -287,7 +290,6 @@ class Scene:
             return select_buffer[:hits * 4]
         else:
             return []
-        
     def delete_selected_object(self):
         # se o objeto for do tipo light_sphere, chame o método delete
         for obj in self.objects:
