@@ -3,6 +3,8 @@
 
 Este projeto consiste em um modelador 3D desenvolvido em Python utilizando OpenGL. O projeto abrange a criação, manipulação e visualização de diversos modelos 3D, com foco em iluminação, texturização e interação do usuário.
 
+![CENA](cg.png)
+
 ## Objetivos
 
 - Renderizar diferentes objetos 3D como cone, cubo, esfera, objetos .obj etc.
