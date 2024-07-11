@@ -163,7 +163,7 @@ class Scene:
 
         glPushMatrix()  # Push initial modelview matrix
 
-        draw_axes()
+        # draw_axes()
 
         while not self.message_queue.empty():
             object_type = self.message_queue.get()
