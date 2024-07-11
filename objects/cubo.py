@@ -1,15 +1,13 @@
 from objects import Object
-from objects import Object
 from OpenGL.GL import *
 from PIL import Image
 import numpy as np
-from utils.transform import Transform  # Certifique-se de importar corretamente a classe Transform
 
 class Cube(Object):
-    def __init__(self, position=None, rotation=None, scale=None, shear=None, texture=None):
-        super().__init__([0, 0, 0])
-        self.transform = Transform(position, rotation, scale)
-        self.shear = shear  # Adicione o atributo shear
+    def __init__(self, position=None, rotation=None, scale=None, texture=None):
+        super().__init__(position)
+        self.transform.rotation = rotation if rotation is not None else [0, 0, 0]
+        self.transform.scale = scale if scale is not None else [1, 1, 1]
         self.selected = False
         self.vertices = self.generate_vertices()
         self.faces = self.generate_faces()
@@ -23,11 +21,13 @@ class Cube(Object):
         self.vbo_vertices = glGenBuffers(1)
         self.vbo_faces = glGenBuffers(1)
         self.vbo_uvs = glGenBuffers(1)
+        self.vbo_normals = glGenBuffers(1)  # Inicialização do VBO para as normais
 
         self.init_vbo()
         
         if self.texture:
             self.load_texture(self.texture)  # Carrega a textura se o caminho estiver disponível
+
 
     def generate_vertices(self):
         vertices = [
@@ -110,10 +110,89 @@ class Cube(Object):
         ]
         return np.array(uvs, dtype=np.float32)
 
+    def init_vbo(self):
+        # Upload vertices to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
+        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
+
+        # Upload faces to VBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.faces.nbytes, self.faces, GL_STATIC_DRAW)
+
+        # Upload UVs to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
+        glBufferData(GL_ARRAY_BUFFER, self.uvs.nbytes, self.uvs, GL_STATIC_DRAW)
+
+        # Upload normals to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)
+        glBufferData(GL_ARRAY_BUFFER, self.normals.nbytes, self.normals, GL_STATIC_DRAW)
+
+    def calculate_normals(self):
+        normals = np.zeros_like(self.vertices, dtype=np.float32)
+
+        for face in self.faces:
+            v1 = self.vertices[face[1]] - self.vertices[face[0]]
+            v2 = self.vertices[face[2]] - self.vertices[face[0]]
+            face_normal = np.cross(v1, v2)
+            face_normal /= np.linalg.norm(face_normal)
+
+            for vertex_index in face:
+                normals[vertex_index] += face_normal
+
+        normals /= np.linalg.norm(normals, axis=1).reshape(-1, 1)
+
+        return normals
+
+    def draw(self):
+        glPushMatrix()
+        glTranslatef(*self.position)
+        
+        glRotatef(self.transform.rotation[0], 1, 0, 0)
+        glRotatef(self.transform.rotation[1], 0, 1, 0)
+        glRotatef(self.transform.rotation[2], 0, 0, 1)
+
+        glScalef(*self.transform.scale)
+        
+        if self.selected:
+            glColor3f(1.0, 0.5, 0.0)
+        else:
+            glColor3f(1.0, 1.0, 1.0)
+
+        if self.texture_id:
+            glEnable(GL_TEXTURE_2D)
+            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_NORMAL_ARRAY)  # Habilita o uso de normais
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
+        glVertexPointer(3, GL_FLOAT, 0, None)
+
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)  # Usa o VBO de normais
+        glNormalPointer(GL_FLOAT, 0, None)
+
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
+        glTexCoordPointer(2, GL_FLOAT, 0, None)
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
+        
+        for face in range(6):
+            glDrawElements(GL_QUADS, 4, GL_UNSIGNED_INT, ctypes.c_void_p(face * 4 * 4))
+
+        glDisableClientState(GL_VERTEX_ARRAY)
+        glDisableClientState(GL_NORMAL_ARRAY)
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY)
+
+        if self.texture_id:
+            glDisable(GL_TEXTURE_2D)
+
+        glPopMatrix()
+
     def to_dict(self):
         return {
             'type': 'cube',
-            'position': self.transform.position,
+            'position': self.position,
             'rotation': self.transform.rotation,
             'scale': self.transform.scale,
             'texture': self.texture,
@@ -156,105 +235,6 @@ class Cube(Object):
         except Exception as e:
             print(f"Erro ao carregar textura: {e}")
 
-        self.texture_id = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, self.texture_id)
-        glTexImage2D(GL_TEXTURE_2D, 0, mode, image.width, image.height, 0, mode, GL_UNSIGNED_BYTE, image_data)
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-
-        self.texture_loaded = True
-        self.texture = file_path
-
-    def init_vbo(self):
-        # Upload vertices to VBO
-        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
-        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
-
-        # Upload faces to VBO
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.faces.nbytes, self.faces, GL_STATIC_DRAW)
-
-        # Upload UVs to VBO
-        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
-        glBufferData(GL_ARRAY_BUFFER, self.uvs.nbytes, self.uvs, GL_STATIC_DRAW)
-
-    def calculate_normals(self):
-        normals = np.zeros_like(self.vertices)
-
-        # Faces frontais
-        normals[0:4] = [0, 0, 1]
-        # Faces traseiras
-        normals[4:8] = [0, 0, -1]
-        # Faces laterais esquerdas
-        normals[8:12] = [-1, 0, 0]
-        # Faces laterais direitas
-        normals[12:16] = [1, 0, 0]
-        # Faces superiores
-        normals[16:20] = [0, 1, 0]
-        # Faces inferiores
-        normals[20:24] = [0, -1, 0]
-
-        return normals.astype(np.float32)
-
-    def draw(self):
-        glPushMatrix()
-        glTranslatef(*self.transform.position)
-        
-        glRotatef(self.transform.rotation[0], 1, 0, 0)
-        glRotatef(self.transform.rotation[1], 0, 1, 0)
-        glRotatef(self.transform.rotation[2], 0, 0, 1)
-
-        glScalef(*self.transform.scale)
-        
-        if self.selected:
-            glColor3f(1.0, 0.5, 0.0)
-        else:
-            glColor3f(0.5, 0.5, 0.5)
-
-        if self.texture_id:
-            glEnable(GL_TEXTURE_2D)
-            glBindTexture(GL_TEXTURE_2D, self.texture_id)
-
-        glEnable(GL_LIGHTING)
-        glEnable(GL_LIGHT0)
-        glLightfv(GL_LIGHT0, GL_POSITION, [5, 5, 5, 1])
-        glLightfv(GL_LIGHT0, GL_AMBIENT, [0.2, 0.2, 0.2, 1.0])
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, [0.8, 0.8, 0.8, 1.0])
-        glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
-
-        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
-        glVertexPointer(3, GL_FLOAT, 0, None)
-
-        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
-        glTexCoordPointer(2, GL_FLOAT, 0, None)
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
-        
-        # Habilita o cullface para cullar as faces de trás
-        glEnable(GL_CULL_FACE)
-        glCullFace(GL_BACK)
-
-        for face in range(6):
-            glDrawElements(GL_QUADS, 4, GL_UNSIGNED_INT, ctypes.c_void_p(face * 4 * 4))
-
-        # Desabilita o cullface após o desenho
-        glDisable(GL_CULL_FACE)
-
-        glDisableClientState(GL_VERTEX_ARRAY)
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY)
-
-        if self.texture_id:
-            glDisable(GL_TEXTURE_2D)
-
-        glDisable(GL_LIGHTING)
-
-        glPopMatrix()
-
     def rotate(self, angle, axis):
         if axis == (1, 0, 0):
             self.transform.rotation[0] += angle
@@ -277,8 +257,8 @@ class Cube(Object):
 
     def translate(self, distance, axis):
         if axis == (1, 0, 0):
-            self.transform.position[0] += distance
+            self.position[0] += distance
         elif axis == (0, 1, 0):
-            self.transform.position[1] += distance
+            self.position[1] += distance
         elif axis == (0, 0, 1):
-            self.transform.position[2] += distance
+            self.position[2] += distance

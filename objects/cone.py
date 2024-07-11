@@ -2,7 +2,6 @@ from objects import Object
 from OpenGL.GL import *
 import numpy as np
 from PIL import Image
-import json
 
 class Cone(Object):
     def __init__(self, base_radius=1, height=2, slices=20, texture=None):
@@ -127,11 +126,16 @@ class Cone(Object):
             v1 = self.vertices[face[1]]
             v2 = self.vertices[face[2]]
             normal = np.cross(v1 - v0, v2 - v0)
-            normal /= np.linalg.norm(normal)
+            normal /= np.linalg.norm(normal)  # Normalize the normal vector
             for vertex_index in face:
                 normals[vertex_index] += normal
-        normals /= np.linalg.norm(normals, axis=1, keepdims=True)
+        normals /= np.linalg.norm(normals, axis=1, keepdims=True)  # Normalize each normal individually
+        
+        # Invert the normals
+        normals *= -1
+        
         return normals.astype(np.float32)
+
 
     def rotate(self, angle, axis):
         if axis == (1, 0, 0):

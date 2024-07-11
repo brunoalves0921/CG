@@ -43,6 +43,9 @@ class Scene:
         glEnable(GL_NORMALIZE)
         glEnable(GL_COLOR_MATERIAL)
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
+
+        self.sunlight_enabled = False
+        self.setup_sunlight()
         
         self.camera = Camera()
         self.overview_camera = Camera()
@@ -125,37 +128,62 @@ class Scene:
     def start_main_loop(self):
         while True:
             self.run()
+        
+    def setup_sunlight(self):
+        self.sunlight_position = [10.0, 10.0, 10.0, 1.0]  # Position of the light
+        self.sunlight_ambient = [0.2, 0.2, 0.2, 1.0]
+        self.sunlight_diffuse = [0.8, 0.8, 0.8, 1.0]
+        self.sunlight_specular = [1.0, 1.0, 1.0, 1.0]
+
+    def toggle_sunlight(self):
+        if self.sunlight_enabled:
+            glDisable(GL_LIGHT1)
+        else:
+            glEnable(GL_LIGHT1)
+            glLightfv(GL_LIGHT1, GL_POSITION, self.sunlight_position)
+            glLightfv(GL_LIGHT1, GL_AMBIENT, self.sunlight_ambient)
+            glLightfv(GL_LIGHT1, GL_DIFFUSE, self.sunlight_diffuse)
+            glLightfv(GL_LIGHT1, GL_SPECULAR, self.sunlight_specular)
+        self.sunlight_enabled = not self.sunlight_enabled
 
     def run(self):
         self.eventListener.run()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
         glTranslatef(self.camera.position[0], self.camera.position[1], self.camera.zoom)
-        glPushMatrix()
         glRotatef(self.camera.rotation[0], 1, 0, 0)
         glRotatef(self.camera.rotation[1], 0, 1, 0)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+
+        glPushMatrix()  # Push initial modelview matrix
+
         draw_axes()
 
         while not self.message_queue.empty():
             object_type = self.message_queue.get()
             self.add_object(object_type)
+        
+        if self.sunlight_enabled:
+            glEnable(GL_LIGHT1)
+            glLightfv(GL_LIGHT1, GL_POSITION, self.sunlight_position)
 
         for obj in self.objects:
             obj.draw()
 
-        glPopMatrix()
+        glPopMatrix()  # Pop initial modelview matrix
 
         if self.show_overview:
             self.draw_overview()
 
-        # Desenhar a barra lateral
+        glPushMatrix()  # Push matrix for sidebar
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
         glLoadIdentity()
         glOrtho(0, self.display[0], self.display[1], 0, -1, 1)
         glMatrixMode(GL_MODELVIEW)
-        glPushMatrix()
         glLoadIdentity()
         self.sidebar.draw()
         glPopMatrix()
@@ -163,7 +191,7 @@ class Scene:
         glPopMatrix()
         glMatrixMode(GL_MODELVIEW)
 
-        # Calcular e exibir FPS
+        # Calculate and display FPS
         self.fps = self.clock.get_fps()
         self.display_fps()
 
@@ -195,7 +223,7 @@ class Scene:
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
         glViewport(overview_x, overview_y, overview_width, overview_height)
-        glMatrixMode(GL_PROJECTION)
+        # glMatrixMode(GL_PROJECTION)
         glPushMatrix()
         glLoadIdentity()
         gluPerspective(45, overview_width / overview_height, 0.1, 10000.0)
@@ -211,7 +239,7 @@ class Scene:
         glPopMatrix()
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
-        glMatrixMode(GL_MODELVIEW)
+        # glMatrixMode(GL_MODELVIEW)
         glPopAttrib()
 
     def select_object(self, x, y):
@@ -261,7 +289,13 @@ class Scene:
             return []
         
     def delete_selected_object(self):
-        self.objects = [obj for obj in self.objects if not obj.selected]
+        # se o objeto for do tipo light_sphere, chame o método delete
+        for obj in self.objects:
+            if obj.selected:
+                if isinstance(obj, LightSphere):
+                    obj.delete()
+                self.objects.remove(obj)
+                break
         print(f"Deleted selected object")
         print(f"Total objects: {len(self.objects)}")
 

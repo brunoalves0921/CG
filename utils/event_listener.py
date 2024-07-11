@@ -1,5 +1,5 @@
 import pygame
-from pygame.locals import KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t, K_c, K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_o, K_p, K_DELETE
+from pygame.locals import KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t, K_c, K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_o, K_p, K_l, K_DELETE, K_ESCAPE
 from OpenGL.GL import *
 from objects.mesh.mesh import Mesh
 
@@ -48,8 +48,13 @@ class EventListener:
             self.overview_active = self.scene.show_overview
         elif event.key == K_p:  # Tecla 'P' para alternar a visibilidade da Sidebar
             self.scene.sidebar.toggle_visibility()
+        elif event.key == K_l:  # Tecla 'L' para alternar a iluminação solar
+            self.scene.toggle_sunlight()
         elif event.key == K_DELETE:
             self.delete_selected_object()
+        elif event.key == K_ESCAPE:
+            pygame.quit()
+            quit()
 
     def delete_selected_object(self):
         self.scene.delete_selected_object()
