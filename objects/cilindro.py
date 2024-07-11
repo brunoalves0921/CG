@@ -227,14 +227,14 @@ class Cylinder(Object):
     def scale(self, factor, axis):
         min_scale = 0.1
         if axis == (1, 0, 0):
-            new_scale = max(min_scale, self.scale_factor[0] + factor)
-            self.scale_factor[0] = new_scale
+            new_scale = max(min_scale, self.transform.scale[0] + factor)
+            self.transform.scale[0] = new_scale
         elif axis == (0, 1, 0):
-            new_scale = max(min_scale, self.scale_factor[1] + factor)
-            self.scale_factor[1] = new_scale
+            new_scale = max(min_scale, self.transform.scale[1] + factor)
+            self.transform.scale[1] = new_scale
         elif axis == (0, 0, 1):
-            new_scale = max(min_scale, self.scale_factor[2] + factor)
-            self.scale_factor[2] = new_scale
+            new_scale = max(min_scale, self.transform.scale[2] + factor)
+            self.transform.scale[2] = new_scale
 
     def translate(self, distance, axis):
         if axis == (1, 0, 0):
