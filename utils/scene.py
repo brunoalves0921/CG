@@ -130,8 +130,6 @@ class Scene:
         while True:
             self.run()
 
-        # self.save_scene(saved_scene_file)
-
     def setup_sunlight(self):
         self.sunlight_position = [10.0, 10.0, 10.0, 1.0]
         self.sunlight_ambient = [0.2, 0.2, 0.2, 1.0]
@@ -202,19 +200,23 @@ class Scene:
         self.clock.tick(999)
 
     def draw_overview(self):
-        glPushAttrib(GL_VIEWPORT_BIT | GL_TRANSFORM_BIT)
+        glPushAttrib(GL_VIEWPORT_BIT | GL_TRANSFORM_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT)
+        
         width, height = self.display
         overview_width = 320
         overview_height = 180
         overview_x = width - overview_width - 10
         overview_y = height - overview_height - 10
+        
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
         glLoadIdentity()
         glOrtho(0, width, 0, height, -1, 1)
+        
         glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
         glLoadIdentity()
+        
         glColor3f(1, 1, 1)
         glBegin(GL_LINE_LOOP)
         glVertex2f(overview_x - 5, overview_y - 5)
@@ -222,26 +224,41 @@ class Scene:
         glVertex2f(overview_x + overview_width + 5, overview_y + overview_height + 5)
         glVertex2f(overview_x - 5, overview_y + overview_height + 5)
         glEnd()
+        
         glPopMatrix()
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
+        
         glViewport(overview_x, overview_y, overview_width, overview_height)
+        
+        glMatrixMode(GL_PROJECTION)
         glPushMatrix()
         glLoadIdentity()
         gluPerspective(45, overview_width / overview_height, 0.1, 10000.0)
+        
         glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
         glLoadIdentity()
+        
         glTranslatef(self.overview_camera.position[0], self.overview_camera.position[1], self.overview_camera.zoom)
         glRotatef(self.overview_camera.rotation[0], 1, 0, 0)
         glRotatef(self.overview_camera.rotation[1], 0, 1, 0)
+        
         draw_axes()
+        
+        if self.sunlight_enabled:
+            glEnable(GL_LIGHT1)
+            glLightfv(GL_LIGHT1, GL_POSITION, self.sunlight_position)
+        
         for obj in self.objects:
             obj.draw()
+        
         glPopMatrix()
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
-        glPopAttrib()
+        
+        glPopAttrib()  # Restore the saved OpenGL state
+
 
     def select_object(self, x, y):
         buffer_size = len(self.objects) * 4 * 4
@@ -253,19 +270,16 @@ class Scene:
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
         glLoadIdentity()
-        
         viewport = glGetIntegerv(GL_VIEWPORT)
         gluPickMatrix(x, viewport[3] - y, 1, 1, viewport)
-        gluPerspective(45, self.display[0] / self.display[1], 0.1, 10000.0)
+        gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
 
         glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
         glLoadIdentity()
-        
         glTranslatef(self.camera.position[0], self.camera.position[1], self.camera.zoom)
         glRotatef(self.camera.rotation[0], 1, 0, 0)
         glRotatef(self.camera.rotation[1], 0, 1, 0)
-        
         draw_axes()
 
         for i, obj in enumerate(self.objects):
@@ -282,8 +296,8 @@ class Scene:
         hits = glRenderMode(GL_RENDER)
         if hits:
             selected_index = self.find_closest_object(hits)
+            print(f"Selected object index: {selected_index}")
             if selected_index is not None:
-                print(f"Selected object index: {selected_index}")
                 print(f"Selected object: {self.objects[selected_index].__class__.__name__}")
                 return int(selected_index)
         return None
