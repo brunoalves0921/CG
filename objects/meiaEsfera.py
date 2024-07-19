@@ -9,8 +9,8 @@ class HalfSphere(Object):
         self.transform.rotation = rotation if rotation is not None else [0, 0, 0]
         self.transform.scale = scale if scale is not None else [1, 1, 1]
         self.selected = False
-        self.vertices, self.normals, self.uvs = self.generate_half_sphere(32, 16)
-        self.faces = self.generate_faces(32, 16)
+        self.vertices, self.normals, self.uvs = self.generate_hemisphere(32, 32)
+        self.faces = self.generate_faces(32, 32)
         self.texture = texture
         self.texture_id = None
         self.texture_loaded = False
@@ -26,12 +26,12 @@ class HalfSphere(Object):
         if self.texture:
             self.load_texture(self.texture)
 
-    def generate_half_sphere(self, slices, stacks):
+    def generate_hemisphere(self, slices, stacks):
         vertices = []
         normals = []
         uvs = []
 
-        for i in range(stacks // 2 + 1):
+        for i in range(stacks + 1):
             theta = i * np.pi / stacks
             sin_theta = np.sin(theta)
             cos_theta = np.cos(theta)
@@ -47,9 +47,11 @@ class HalfSphere(Object):
                 u = 1 - (j / slices)
                 v = 1 - (i / stacks)
 
-                vertices.append([x, y, z])
-                normals.append([x, y, z])
-                uvs.append([u, v])
+                # Ensure we are only generating vertices for the upper half of the sphere
+                if y >= 0:
+                    vertices.append([x, y, z])
+                    normals.append([x, y, z])
+                    uvs.append([u, v])
 
         vertices = np.array(vertices, dtype=np.float32)
         normals = np.array(normals, dtype=np.float32)
@@ -60,11 +62,13 @@ class HalfSphere(Object):
     def generate_faces(self, slices, stacks):
         faces = []
 
-        for i in range(stacks // 2):
+        for i in range(stacks):
             for j in range(slices):
                 v1 = i * (slices + 1) + j
                 v2 = v1 + slices + 1
-                faces.append((v1, v2, v2 + 1, v1 + 1))
+                # Only add faces for vertices in the upper half of the hemisphere
+                if v2 < len(self.vertices) and v1 < len(self.vertices):
+                    faces.append((v1, v2, v2 + 1, v1 + 1))
 
         return np.array(faces, dtype=np.uint32)
 
@@ -84,9 +88,6 @@ class HalfSphere(Object):
         # Upload normals to VBO
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)
         glBufferData(GL_ARRAY_BUFFER, self.normals.nbytes, self.normals, GL_STATIC_DRAW)
-
-    def calculate_normals(self):
-        pass  # A semiesfera já gera suas normais corretamente
 
     def draw(self):
         glPushMatrix()
@@ -121,9 +122,7 @@ class HalfSphere(Object):
         glTexCoordPointer(2, GL_FLOAT, 0, None)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
-
-        for face in range(self.faces.shape[0]):
-            glDrawElements(GL_QUADS, 4, GL_UNSIGNED_INT, ctypes.c_void_p(face * 4 * 4))
+        glDrawElements(GL_QUADS, self.faces.size, GL_UNSIGNED_INT, None)
 
         glDisableClientState(GL_VERTEX_ARRAY)
         glDisableClientState(GL_NORMAL_ARRAY)
@@ -136,7 +135,7 @@ class HalfSphere(Object):
 
     def to_dict(self):
         return {
-            'type': 'half_sphere',
+            'type': 'hemisphere',
             'position': self.position,
             'rotation': self.transform.rotation,
             'scale': self.transform.scale,

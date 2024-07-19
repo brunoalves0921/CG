@@ -85,9 +85,6 @@ class Sphere(Object):
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)
         glBufferData(GL_ARRAY_BUFFER, self.normals.nbytes, self.normals, GL_STATIC_DRAW)
 
-    def calculate_normals(self):
-        pass  # A esfera já gera suas normais corretamente
-
     def draw(self):
         glPushMatrix()
         glTranslatef(*self.position)
@@ -121,9 +118,7 @@ class Sphere(Object):
         glTexCoordPointer(2, GL_FLOAT, 0, None)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
-
-        for face in range(self.faces.shape[0]):
-            glDrawElements(GL_QUADS, 4, GL_UNSIGNED_INT, ctypes.c_void_p(face * 4 * 4))
+        glDrawElements(GL_QUADS, self.faces.size, GL_UNSIGNED_INT, None)
 
         glDisableClientState(GL_VERTEX_ARRAY)
         glDisableClientState(GL_NORMAL_ARRAY)
