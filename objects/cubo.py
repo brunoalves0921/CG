@@ -28,6 +28,8 @@ class Cube(Object):
         if self.texture:
             self.load_texture(self.texture)  # Carrega a textura se o caminho estiver disponível
 
+    def get_center(self):
+        return self.position
 
     def generate_vertices(self):
         vertices = [

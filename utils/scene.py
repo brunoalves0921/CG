@@ -130,7 +130,7 @@ class Scene:
         while True:
             self.run()
 
-        self.save_scene(saved_scene_file)
+        # self.save_scene(saved_scene_file)
 
     def setup_sunlight(self):
         self.sunlight_position = [10.0, 10.0, 10.0, 1.0]
@@ -163,7 +163,7 @@ class Scene:
 
         glPushMatrix()  # Push initial modelview matrix
 
-        # draw_axes()
+        draw_axes()
 
         while not self.message_queue.empty():
             object_type = self.message_queue.get()
@@ -226,7 +226,6 @@ class Scene:
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
         glViewport(overview_x, overview_y, overview_width, overview_height)
-        # glMatrixMode(GL_PROJECTION)
         glPushMatrix()
         glLoadIdentity()
         gluPerspective(45, overview_width / overview_height, 0.1, 10000.0)
@@ -242,14 +241,11 @@ class Scene:
         glPopMatrix()
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
-        # glMatrixMode(GL_MODELVIEW)
         glPopAttrib()
 
     def select_object(self, x, y):
-        # Aumente o tamanho do buffer para o necessário para armazenar todos os objetos
         buffer_size = len(self.objects) * 4 * 4
-        print(f"Buffer size: {buffer_size}")
-        select_buffer = glSelectBuffer(buffer_size)
+        glSelectBuffer(buffer_size)
         glRenderMode(GL_SELECT)
         glInitNames()
         glPushName(0)
@@ -257,39 +253,54 @@ class Scene:
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
         glLoadIdentity()
-        viewport = glGetIntegerv(GL_VIEWPORT)
-        # Diminuir a área de seleção para 1x1 pixels para maior precisão
-        gluPickMatrix(x, viewport[3] - y, 1, 1, viewport)
-        gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        glTranslatef(self.camera.position[0], self.camera.position[1], self.camera.zoom)
         
+        viewport = glGetIntegerv(GL_VIEWPORT)
+        gluPickMatrix(x, viewport[3] - y, 1, 1, viewport)
+        gluPerspective(45, self.display[0] / self.display[1], 0.1, 10000.0)
+
+        glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
+        glLoadIdentity()
+        
+        glTranslatef(self.camera.position[0], self.camera.position[1], self.camera.zoom)
         glRotatef(self.camera.rotation[0], 1, 0, 0)
         glRotatef(self.camera.rotation[1], 0, 1, 0)
+        
         draw_axes()
 
         for i, obj in enumerate(self.objects):
             glLoadName(i + 1)
-            if isinstance(obj, Mesh):
-                obj.draw()  # Draw mesh objects
-            else:
-                obj.draw()
+            obj.draw()
 
-        glPopMatrix()
+        glPopMatrix()  # Pop do MODELVIEW
         glMatrixMode(GL_PROJECTION)
-        glPopMatrix()
+        glPopMatrix()  # Pop do PROJECTION
+
         glMatrixMode(GL_MODELVIEW)
         glFlush()
 
         hits = glRenderMode(GL_RENDER)
-        if isinstance(hits, list):
-            hits = len(hits)
-        if hits > 0:
-            return select_buffer[:hits * 4]
-        else:
-            return []
+        if hits:
+            selected_index = self.find_closest_object(hits)
+            if selected_index is not None:
+                print(f"Selected object index: {selected_index}")
+                print(f"Selected object: {self.objects[selected_index].__class__.__name__}")
+                return int(selected_index)
+        return None
+
+    def find_closest_object(self, hits):
+        min_distance = float('inf')
+        closest_index = None
+
+        for hit in hits:
+            z_min = hit[1]
+            names = hit[2]  # 'names' é uma lista de nomes
+            if z_min < min_distance and names:
+                min_distance = z_min
+                closest_index = names[0] - 1  # Ajuste para indexação correta
+
+        return closest_index
+
     def delete_selected_object(self):
         # se o objeto for do tipo light_sphere, chame o método delete
         for obj in self.objects:

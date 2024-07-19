@@ -100,9 +100,8 @@ class EventListener:
 
     def select_object(self, event, shift_pressed):
         x, y = pygame.mouse.get_pos()
-        hits = self.scene.select_object(x, y)
-        if hits is not None and len(hits) > 0:
-            selected_object_index = hits[3] - 1
+        selected_object_index = self.scene.select_object(x, y)
+        if selected_object_index is not None:
             selected_object = self.scene.objects[selected_object_index]
             selected_object.selected = not selected_object.selected
             if selected_object.selected and not shift_pressed:
@@ -118,7 +117,13 @@ class EventListener:
         value_scale = 0.05 * direction
         min_scale = 0.05
 
-        if any(obj.selected for obj in self.scene.objects):
+        # Verificar se há objetos selecionados
+        objects_selected = any(obj.selected for obj in self.scene.objects)
+        
+        # Verificar se há alguma tecla de controle pressionada
+        control_pressed = ctrl_pressed or shift_pressed or alt_pressed
+        
+        if objects_selected and control_pressed:
             for obj in self.scene.objects:
                 if obj.selected:
                     self.apply_transformations(obj, value_rotate, value_translate, value_scale, min_scale, ctrl_pressed, shift_pressed, alt_pressed)
