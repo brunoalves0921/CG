@@ -1,5 +1,5 @@
 import pygame
-from pygame.locals import KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t, K_c, K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_o, K_p, K_l, K_DELETE, K_ESCAPE
+from pygame.locals import KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t, K_c, K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_o, K_p, K_l, K_DELETE, K_ESCAPE, K_s
 from OpenGL.GL import *
 from objects.mesh.mesh import Mesh
 
@@ -12,6 +12,7 @@ class EventListener:
         self.translate_mode = False
         self.shear_mode = False
         self.overview_active = False 
+        self.render_shadows_mode = False 
     
     def run(self):
         mods = pygame.key.get_mods()
@@ -50,6 +51,8 @@ class EventListener:
             self.scene.sidebar.toggle_visibility()
         elif event.key == K_l:  # Tecla 'L' para alternar a iluminação solar
             self.scene.toggle_sunlight()
+        elif event.key == K_s:  # Tecla 'S' para alternar a renderização das sombras
+            self.scene.render_shadows_flag = not self.scene.render_shadows_flag
         elif event.key == K_DELETE:
             self.delete_selected_object()
         elif event.key == K_ESCAPE:

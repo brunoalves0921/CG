@@ -39,8 +39,8 @@ class Cylinder(Object):
             angle = 2 * np.pi * i / self.segments
             x = self.radius * np.cos(angle)
             z = self.radius * np.sin(angle)
-            vertices.append([x, -self.height / 2, z])
-            vertices.append([x, self.height / 2, z])
+            vertices.append([x, 0, z])  # Ajustado para começar no y = 0
+            vertices.append([x, self.height, z])  # Ajustado para o topo no y = self.height
             uvs.append([i / self.segments, 0])
             uvs.append([i / self.segments, 1])
             
@@ -48,28 +48,28 @@ class Cylinder(Object):
             faces.append([i * 2, next_i * 2, i * 2 + 1])
             faces.append([next_i * 2, next_i * 2 + 1, i * 2 + 1])
 
-        # Tapa inferior
+        # Tampa inferior
         bottom_center_index = len(vertices)
-        vertices.append([0, -self.height / 2, 0])
+        vertices.append([0, 0, 0])  # Centro do fundo do cilindro
         uvs.append([0.5, 0.5])
         for i in range(self.segments):
             angle = 2 * np.pi * i / self.segments
             x = self.radius * np.cos(angle)
             z = self.radius * np.sin(angle)
-            vertices.append([x, -self.height / 2, z])
+            vertices.append([x, 0, z])
             uvs.append([0.5 + 0.5 * np.cos(angle), 0.5 + 0.5 * np.sin(angle)])
             next_i = (i + 1) % self.segments
             faces.append([bottom_center_index, bottom_center_index + i + 1, bottom_center_index + next_i + 1])
 
-        # Tapa superior
+        # Tampa superior
         top_center_index = len(vertices)
-        vertices.append([0, self.height / 2, 0])
+        vertices.append([0, self.height, 0])  # Centro do topo do cilindro
         uvs.append([0.5, 0.5])
         for i in range(self.segments):
             angle = 2 * np.pi * i / self.segments
             x = self.radius * np.cos(angle)
             z = self.radius * np.sin(angle)
-            vertices.append([x, self.height / 2, z])
+            vertices.append([x, self.height, z])
             uvs.append([0.5 + 0.5 * np.cos(angle), 0.5 + 0.5 * np.sin(angle)])
             next_i = (i + 1) % self.segments
             faces.append([top_center_index, top_center_index + next_i + 1, top_center_index + i + 1])
@@ -79,6 +79,7 @@ class Cylinder(Object):
         uvs = np.array(uvs, dtype=np.float32)
 
         return vertices, faces, uvs
+
 
     def calculate_normals(self):
         normals = np.zeros_like(self.vertices, dtype=np.float32)
@@ -119,7 +120,7 @@ class Cylinder(Object):
         glBufferData(GL_ARRAY_BUFFER, self.normals.nbytes, self.normals, GL_STATIC_DRAW)
 
 
-    def draw(self):
+    def draw(self, is_shadow=False):
         glPushMatrix()
         glTranslatef(*self.position)
         
@@ -129,10 +130,16 @@ class Cylinder(Object):
 
         glScalef(*self.transform.scale)
         
-        if self.selected:
-            glColor3f(1.0, 0.5, 0.0)
-        else:
+        previous_color = glGetFloatv(GL_CURRENT_COLOR)
+        if not is_shadow:
+            # Define a cor branca somente se não for sombra
             glColor3f(1.0, 1.0, 1.0)
+        else:
+            # Para a sombra, você pode definir uma cor específica ou uma cor de sombra
+            glColor3f(0.0, 0.0, 0.0)  # Cor preta para a sombra
+        
+        if not is_shadow and self.selected:
+            glColor3f(1.0, 0.5, 0.0)  # Aplica a cor laranja somente se selecionado e não for sombra
 
         if self.texture_id:
             glEnable(GL_TEXTURE_2D)
@@ -160,6 +167,9 @@ class Cylinder(Object):
 
         if self.texture_id:
             glDisable(GL_TEXTURE_2D)
+
+        #Restaura a cor anterior
+        glColor3f(*previous_color[:3])
 
         glPopMatrix()
 
@@ -190,13 +200,10 @@ class Cylinder(Object):
     def load_texture(self, file_path):
         try:
             image = Image.open(file_path)
-            image = image.convert("RGB")
+            image = image.convert("RGBA")  # Garantir que a imagem tenha um canal alpha
             image_data = np.array(image, dtype=np.uint8)
-            
-            if image.mode == 'RGBA':
-                mode = GL_RGBA
-            else:
-                mode = GL_RGB
+
+            mode = GL_RGBA  # Usar GL_RGBA para texturas com canal alpha
 
             if self.texture_id:
                 glDeleteTextures([self.texture_id])
@@ -211,6 +218,11 @@ class Cylinder(Object):
 
             self.texture_loaded = True
             self.texture = file_path
+
+            # Configura o blending para suportar transparência
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
         except FileNotFoundError:
             print(f"Textura não encontrada: {file_path}")
         except Exception as e:

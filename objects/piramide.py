@@ -5,7 +5,7 @@ import numpy as np
 
 class Pyramid(Object):
     def __init__(self, position=None, rotation=None, scale=None, texture=None):
-        super().__init__(position)
+        super().__init__(position if position else [0, 0, 0])  # Ajusta a posição inicial para [0, 0, 0] por padrão
         self.transform.rotation = rotation if rotation is not None else [0, 0, 0]
         self.transform.scale = scale if scale is not None else [1, 1, 1]
         self.selected = False
@@ -28,14 +28,14 @@ class Pyramid(Object):
         
         if self.texture:
             self.load_texture(self.texture)  # Carrega a textura se o caminho estiver disponível
-
+            
     def generate_vertices(self):
         vertices = [
-            [0, 1, 0],      # Apex
-            [-1, -1, 1],    # Front-left
-            [1, -1, 1],     # Front-right
-            [1, -1, -1],    # Back-right
-            [-1, -1, -1],   # Back-left
+            [0, 2, 0],      # Apex
+            [-1, 0, 1],    # Front-left
+            [1, 0, 1],     # Front-right
+            [1, 0, -1],    # Back-right
+            [-1, 0, -1],   # Back-left
         ]
         return np.array(vertices, dtype=np.float32)
 
@@ -107,7 +107,7 @@ class Pyramid(Object):
 
         return normals
 
-    def draw(self):
+    def draw(self, is_shadow=False):
         glPushMatrix()
         glTranslatef(*self.position)
         
@@ -116,11 +116,17 @@ class Pyramid(Object):
         glRotatef(self.transform.rotation[2], 0, 0, 1)
 
         glScalef(*self.transform.scale)
-        
-        if self.selected:
-            glColor3f(1.0, 0.5, 0.0)
-        else:
+
+        previous_color = glGetFloatv(GL_CURRENT_COLOR)
+        if not is_shadow:
+            # Define a cor branca somente se não for sombra
             glColor3f(1.0, 1.0, 1.0)
+        else:
+            # Para a sombra, você pode definir uma cor específica ou uma cor de sombra
+            glColor3f(0.0, 0.0, 0.0)  # Cor preta para a sombra
+        
+        if not is_shadow and self.selected:
+            glColor3f(1.0, 0.5, 0.0)  # Aplica a cor laranja somente se selecionado e não for sombra
 
         if self.texture_id:
             glEnable(GL_TEXTURE_2D)
@@ -154,6 +160,9 @@ class Pyramid(Object):
 
         if self.texture_id:
             glDisable(GL_TEXTURE_2D)
+        
+        #Restaura a cor anterior
+        glColor3f(*previous_color[:3])
 
         glPopMatrix()
 
@@ -177,13 +186,10 @@ class Pyramid(Object):
     def load_texture(self, file_path):
         try:
             image = Image.open(file_path)
-            image = image.convert("RGB")
+            image = image.convert("RGBA")  # Garantir que a imagem tenha um canal alpha
             image_data = np.array(image, dtype=np.uint8)
-            
-            if image.mode == 'RGBA':
-                mode = GL_RGBA
-            else:
-                mode = GL_RGB
+
+            mode = GL_RGBA  # Usar GL_RGBA para texturas com canal alpha
 
             if self.texture_id:
                 glDeleteTextures([self.texture_id])
@@ -198,6 +204,11 @@ class Pyramid(Object):
 
             self.texture_loaded = True
             self.texture = file_path
+
+            # Configura o blending para suportar transparência
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
         except FileNotFoundError:
             print(f"Textura não encontrada: {file_path}")
         except Exception as e:

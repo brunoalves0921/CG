@@ -16,7 +16,6 @@ class Cube(Object):
         self.texture = texture
         self.texture_id = None
         self.texture_loaded = False
-
         # VBO IDs
         self.vbo_vertices = glGenBuffers(1)
         self.vbo_faces = glGenBuffers(1)
@@ -145,7 +144,7 @@ class Cube(Object):
 
         return normals
 
-    def draw(self):
+    def draw(self, is_shadow=False):
         glPushMatrix()
         glTranslatef(*self.position)
         
@@ -155,11 +154,17 @@ class Cube(Object):
 
         glScalef(*self.transform.scale)
         
-        if self.selected:
-            glColor3f(1.0, 0.5, 0.0)
-        else:
+        previous_color = glGetFloatv(GL_CURRENT_COLOR)
+        if not is_shadow:
+            # Define a cor branca somente se não for sombra
             glColor3f(1.0, 1.0, 1.0)
-
+        else:
+            # Para a sombra, você pode definir uma cor específica ou uma cor de sombra
+            glColor3f(0.0, 0.0, 0.0)  # Cor preta para a sombra
+        
+        if not is_shadow and self.selected:
+            glColor3f(1.0, 0.5, 0.0)  # Aplica a cor laranja somente se selecionado e não for sombra
+            
         if self.texture_id:
             glEnable(GL_TEXTURE_2D)
             glBindTexture(GL_TEXTURE_2D, self.texture_id)
@@ -189,6 +194,9 @@ class Cube(Object):
         if self.texture_id:
             glDisable(GL_TEXTURE_2D)
 
+        # Restaura a cor anterior
+        glColor3f(*previous_color[:3])
+
         glPopMatrix()
 
     def to_dict(self):
@@ -211,13 +219,10 @@ class Cube(Object):
     def load_texture(self, file_path):
         try:
             image = Image.open(file_path)
-            image = image.convert("RGB")
+            image = image.convert("RGBA")  # Garantir que a imagem tenha um canal alpha
             image_data = np.array(image, dtype=np.uint8)
-            
-            if image.mode == 'RGBA':
-                mode = GL_RGBA
-            else:
-                mode = GL_RGB
+
+            mode = GL_RGBA  # Usar GL_RGBA para texturas com canal alpha
 
             if self.texture_id:
                 glDeleteTextures([self.texture_id])
@@ -232,10 +237,16 @@ class Cube(Object):
 
             self.texture_loaded = True
             self.texture = file_path
+
+            # Configura o blending para suportar transparência
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
         except FileNotFoundError:
             print(f"Textura não encontrada: {file_path}")
         except Exception as e:
             print(f"Erro ao carregar textura: {e}")
+
 
     def rotate(self, angle, axis):
         if axis == (1, 0, 0):

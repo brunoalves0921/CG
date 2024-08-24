@@ -1,7 +1,7 @@
 import json
 import os
 import pygame
-from objects import Mesh, Cube, Sphere, Cone, Cylinder, HalfSphere, Pyramid, LightSphere
+from objects import Mesh, Cube, Sphere, Cone, Cylinder, HalfSphere, Pyramid, LightSphere, Plane
 from utils.camera import Camera
 from utils.event_listener import EventListener
 from utils.sidebar import Sidebar
@@ -32,29 +32,40 @@ class Scene:
         gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
         glTranslatef(0.0, 0.0, -5)
 
+        #cor de fundo do cenário
         glClearColor(0.53, 0.81, 0.98, 1.0)
         
+        #habilita o teste de profundidade
         glEnable(GL_DEPTH_TEST)
         glEnableClientState(GL_VERTEX_ARRAY)
         
+        #habilita a iluminação
         glEnable(GL_LIGHTING)
-        # glEnable(GL_LIGHT0)
         glEnable(GL_NORMALIZE)
         glEnable(GL_COLOR_MATERIAL)
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
 
+        #habilita a luz ambiente (luz branca do sol)
         self.sunlight_enabled = False
         self.setup_sunlight()
         
+        #inicializa a câmera
         self.camera = Camera()
         self.overview_camera = Camera()
         self.eventListener = EventListener(self)
         self.show_overview = False
 
+        #inicializa a barra lateral
         self.sidebar = Sidebar()
 
+        #inicializa o relógio e a taxa de atualização da FPS
         self.clock = pygame.time.Clock()
         self.fps = 0
+        self.fps_display_timer = pygame.time.get_ticks()
+        self.fps_interval = 500  # Atualizar a FPS a cada 1000 ms (1 segundo)
+
+        #toggle sombras
+        self.render_shadows_flag = False
 
     def save_scene(self, file_path):
         scene_data = {
@@ -74,7 +85,9 @@ class Scene:
 
         self.objects = []
         for obj_data in scene_data['objects']:
-            if obj_data['type'] == 'cube':
+            if obj_data['type'] == 'plane':
+                obj = Plane.from_dict(obj_data)
+            elif obj_data['type'] == 'cube':
                 obj = Cube.from_dict(obj_data)
             elif obj_data['type'] == 'sphere':
                 obj = Sphere.from_dict(obj_data)
@@ -100,7 +113,9 @@ class Scene:
             self.camera.from_dict(scene_data['camera'])  # Load camera position
 
     def add_object(self, object_type):
-        if object_type == 'cube':
+        if object_type == 'plane':
+            obj = Plane()
+        elif object_type == 'cube':
             obj = Cube()
         elif object_type == 'sphere':
             obj = Sphere()
@@ -147,38 +162,80 @@ class Scene:
             glLightfv(GL_LIGHT1, GL_SPECULAR, self.sunlight_specular)
         self.sunlight_enabled = not self.sunlight_enabled
 
+    def render_shadows(self):
+        glPushAttrib(GL_LIGHTING_BIT | GL_TEXTURE_BIT)  # Salva o estado das configurações de iluminação e texturas
+        glDisable(GL_LIGHTING)  # Desativa a iluminação
+        glDisable(GL_TEXTURE_2D)  # Desativa texturas
+
+        glColor3f(0.0, 0.0, 0.0)  # Define a cor da sombra como preta
+
+        light_dir = self.sunlight_position[:3]
+        light_dir = [d / (sum(light_dir) ** 0.5) for d in light_dir]  # Normaliza a direção da luz
+
+        shadow_matrix = [
+            1, 0, 0, 0,
+            -light_dir[0], 0, -light_dir[2], 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        ]
+
+        for obj in self.objects:
+            if isinstance(obj, Plane) or isinstance(obj, LightSphere):
+                continue  # Pula a renderização da sombra para objetos do tipo Plane
+
+            glPushMatrix()
+            glTranslatef(0, 0.01, 0)  # Adiciona uma pequena translação vertical para levantar a sombra
+            glMultMatrixf(shadow_matrix)  # Aplica a matriz de sombra
+
+            obj.draw(is_shadow=True)  # Desenha o objeto como sombra
+
+            glPopMatrix()
+
+        glPopAttrib()  # Restaura o estado das configurações de iluminação e texturas
+
     def run(self):
         self.eventListener.run()
+        
+        # Limpa o buffer de cor e de profundidade
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        
+        # Configuração da projeção para a cena principal
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
+        
+        # Configurações da câmera principal
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
         glTranslatef(self.camera.position[0], self.camera.position[1], self.camera.zoom)
         glRotatef(self.camera.rotation[0], 1, 0, 0)
         glRotatef(self.camera.rotation[1], 0, 1, 0)
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-
-        glPushMatrix()  # Push initial modelview matrix
-
+        
+        # Desenha o cenário principal
         draw_axes()
 
         while not self.message_queue.empty():
             object_type = self.message_queue.get()
             self.add_object(object_type)
-        
+
+        # Atualiza e aplica a iluminação do sol
         if self.sunlight_enabled:
             glEnable(GL_LIGHT1)
             glLightfv(GL_LIGHT1, GL_POSITION, self.sunlight_position)
 
+        # Desenha todos os objetos da cena principal
         for obj in self.objects:
             obj.draw()
 
-        glPopMatrix()  # Pop initial modelview matrix
+        # Renderiza as sombras se o flag estiver ativado
+        if self.render_shadows_flag:
+            self.render_shadows()
 
+        # Desenha o overview após o cenário principal
         if self.show_overview:
             self.draw_overview()
 
+        # Configurações para a barra lateral
         glPushMatrix()  # Push matrix for sidebar
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
@@ -191,32 +248,41 @@ class Scene:
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
         glMatrixMode(GL_MODELVIEW)
+        
+        # Atualiza o FPS periodicamente
+        current_time = pygame.time.get_ticks()
+        if current_time - self.fps_display_timer >= self.fps_interval:
+            self.fps = self.clock.get_fps()
+            self.fps_display_timer = current_time
 
-        # Calculate and display FPS
-        self.fps = self.clock.get_fps()
         self.display_fps()
-
+        
+        # Atualiza a tela
         pygame.display.flip()
         self.clock.tick(999)
 
     def draw_overview(self):
+        # Salva o estado atual do OpenGL, incluindo viewport e outros atributos
         glPushAttrib(GL_VIEWPORT_BIT | GL_TRANSFORM_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT)
-        
+
+        # Dimensões da janela de overview
         width, height = self.display
         overview_width = 320
         overview_height = 180
         overview_x = width - overview_width - 10
         overview_y = height - overview_height - 10
-        
+
+        # Configurações de projeção para a moldura
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
         glLoadIdentity()
         glOrtho(0, width, 0, height, -1, 1)
-        
+
         glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
         glLoadIdentity()
-        
+
+        # Desenha a moldura ao redor do overview
         glColor3f(1, 1, 1)
         glBegin(GL_LINE_LOOP)
         glVertex2f(overview_x - 5, overview_y - 5)
@@ -224,41 +290,51 @@ class Scene:
         glVertex2f(overview_x + overview_width + 5, overview_y + overview_height + 5)
         glVertex2f(overview_x - 5, overview_y + overview_height + 5)
         glEnd()
-        
+
         glPopMatrix()
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
-        
+
+        # Configura a viewport para a janela de overview
         glViewport(overview_x, overview_y, overview_width, overview_height)
-        
+
+        # Habilita o teste de profundidade
+        glEnable(GL_DEPTH_TEST)
+
+        # Configurações de projeção para o overview
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
         glLoadIdentity()
-        gluPerspective(45, overview_width / overview_height, 0.1, 10000.0)
-        
+
+        # Corrige a proporção de aspecto para o overview
+        aspect_ratio = overview_width / overview_height
+        gluPerspective(45, aspect_ratio, 0.1, 10000.0)
+
+        # Ajustes da câmera para o overview
         glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
         glLoadIdentity()
-        
+
+        # Configure a câmera de overview com parâmetros corretos
         glTranslatef(self.overview_camera.position[0], self.overview_camera.position[1], self.overview_camera.zoom)
         glRotatef(self.overview_camera.rotation[0], 1, 0, 0)
         glRotatef(self.overview_camera.rotation[1], 0, 1, 0)
-        
-        draw_axes()
-        
+
         if self.sunlight_enabled:
             glEnable(GL_LIGHT1)
             glLightfv(GL_LIGHT1, GL_POSITION, self.sunlight_position)
-        
+
+        # Desenha os objetos no overview
         for obj in self.objects:
             obj.draw()
-        
+
+        # Restaura as matrizes de projeção e modelview
         glPopMatrix()
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
-        
-        glPopAttrib()  # Restore the saved OpenGL state
 
+        # Restaura o estado salvo do OpenGL
+        glPopAttrib()
 
     def select_object(self, x, y):
         buffer_size = len(self.objects) * 4 * 4
@@ -280,7 +356,6 @@ class Scene:
         glTranslatef(self.camera.position[0], self.camera.position[1], self.camera.zoom)
         glRotatef(self.camera.rotation[0], 1, 0, 0)
         glRotatef(self.camera.rotation[1], 0, 1, 0)
-        draw_axes()
 
         for i, obj in enumerate(self.objects):
             glLoadName(i + 1)

@@ -9,6 +9,7 @@ from math import cos, sin, pi
 class Sidebar:
     def __init__(self):
         self.buttons = [
+            {'label': 'Plano', 'action': 'plane'},
             {'label': 'Cubo', 'action': 'cube'},
             {'label': 'Esfera', 'action': 'sphere'},
             {'label': 'Cone', 'action': 'cone'},

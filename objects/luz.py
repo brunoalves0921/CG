@@ -97,13 +97,15 @@ class LightSphere(Object):
 
     def draw(self):
         glPushMatrix()
-        glTranslatef(*self.position)
+        glTranslatef(*self.position)    
 
-        # Configure the material color
+        # Armazena a cor anterior
+        previous_color = glGetFloatv(GL_CURRENT_COLOR)
+
         if self.selected:
-            glColor3f(1.0, 0.5, 0.0)  # Orange if selected
+            glColor3f(1.0, 0.5, 0.0)
         else:
-            glColor3f(*self.color)  # Light color
+            glColor3f(*previous_color[:3])  # Restaurar a cor anterior, caso não esteja selecionado
 
         # Draw the sphere using the GLU function
         quadric = gluNewQuadric()
@@ -114,6 +116,9 @@ class LightSphere(Object):
         gluSphere(quadric, self.radius, self.slices, self.stacks)
         gluDeleteQuadric(quadric)
 
+        # Restaura a cor anterior
+        glColor3f(*previous_color[:3])
+        
         glPopMatrix()
 
         # Update the light after drawing the object

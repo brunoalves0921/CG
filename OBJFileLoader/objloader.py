@@ -1,10 +1,12 @@
 import os
 import pygame
+import numpy as np
 from OpenGL.GL import *
-
+from OpenGL.arrays import vbo
 
 class OBJ:
     generate_on_init = True
+    
     @classmethod
     def loadTexture(cls, imagefile):
         surf = pygame.image.load(imagefile)
@@ -12,9 +14,10 @@ class OBJ:
         ix, iy = surf.get_rect().size
         texid = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, texid)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ix, iy, 0, GL_RGBA, GL_UNSIGNED_BYTE, image)
+        glGenerateMipmap(GL_TEXTURE_2D)  # Generate mipmaps
         return texid
 
     @classmethod
@@ -32,7 +35,7 @@ class OBJ:
             elif mtl is None:
                 raise ValueError("mtl file doesn't start with newmtl stmt")
             elif values[0] == 'map_Kd':
-                # load the texture referred to by this declaration
+                # Load the texture referred to by this declaration
                 mtl[values[0]] = values[1]
                 imagefile = os.path.join(dirname, mtl['map_Kd'])
                 mtl['texture_Kd'] = cls.loadTexture(imagefile)
@@ -41,14 +44,16 @@ class OBJ:
         return contents
 
     def __init__(self, filename, swapyz=False, default_mtl: tuple[str, str]=None):
-        """Loads a Wavefront OBJ file. """
+        """Loads a Wavefront OBJ file."""
         self.vertices = []
         self.normals = []
         self.texcoords = []
         self.faces = []
+        self.vbo_vertices = None
+        self.vbo_texcoords = None
+        self.vbo_normals = None
         self.gl_list = 0
         dirname = os.path.dirname(filename)
-
 
         material = None
         if default_mtl is not None:
@@ -101,30 +106,92 @@ class OBJ:
         glNewList(self.gl_list, GL_COMPILE)
         glEnable(GL_TEXTURE_2D)
         glFrontFace(GL_CCW)
+
+        # Data buffers
+        data_vertices = []
+        data_normals = []
+        data_texcoords = []
+
         for face in self.faces:
             vertices, normals, texture_coords, material = face
 
             mtl = self.mtl[material]
             if 'texture_Kd' in mtl:
-                # use diffuse texmap
+                # Use diffuse texmap
                 glBindTexture(GL_TEXTURE_2D, mtl['texture_Kd'])
             else:
-                # just use diffuse colour
+                # Just use diffuse color
                 glColor(*mtl['Kd'])
 
-            glBegin(GL_POLYGON)
             for i in range(len(vertices)):
+                data_vertices.append(self.vertices[vertices[i] - 1])
+
                 if normals[i] > 0:
-                    glNormal3fv(self.normals[normals[i] - 1])
+                    data_normals.append(self.normals[normals[i] - 1])
+                else:
+                    data_normals.append((0, 0, 0))  # Default normal
+
                 if texture_coords[i] > 0:
-                    glTexCoord2fv(self.texcoords[texture_coords[i] - 1])
-                glVertex3fv(self.vertices[vertices[i] - 1])
-            glEnd()
+                    data_texcoords.append(self.texcoords[texture_coords[i] - 1])
+                else:
+                    data_texcoords.append((0, 0))  # Default texcoord
+
+        # Convert lists to numpy arrays for VBO
+        data_vertices = np.array(data_vertices, dtype='f')
+        data_normals = np.array(data_normals, dtype='f')
+        data_texcoords = np.array(data_texcoords, dtype='f')
+
+        # Create VBOs
+        self.vbo_vertices = vbo.VBO(data_vertices)
+        self.vbo_normals = vbo.VBO(data_normals)
+        self.vbo_texcoords = vbo.VBO(data_texcoords)
+
+        # Bind and draw VBOs
+        self.vbo_vertices.bind()
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glVertexPointer(3, GL_FLOAT, 0, self.vbo_vertices)
+
+        self.vbo_normals.bind()
+        glEnableClientState(GL_NORMAL_ARRAY)
+        glNormalPointer(GL_FLOAT, 0, self.vbo_normals)
+
+        self.vbo_texcoords.bind()
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+        glTexCoordPointer(2, GL_FLOAT, 0, self.vbo_texcoords)
+
+        # Use GL_POLYGON for each face
+        face_start = 0
+        for face in self.faces:
+            vertices, normals, texture_coords, material = face
+            face_len = len(vertices)
+            glDrawArrays(GL_POLYGON, face_start, face_len)
+            face_start += face_len
+
+        # Disable client states
+        glDisableClientState(GL_VERTEX_ARRAY)
+        glDisableClientState(GL_NORMAL_ARRAY)
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY)
+
+        # Unbind VBOs
+        self.vbo_vertices.unbind()
+        self.vbo_normals.unbind()
+        self.vbo_texcoords.unbind()
+
         glDisable(GL_TEXTURE_2D)
         glEndList()
 
     def render(self):
         glCallList(self.gl_list)
 
-    def free(self):
-        glDeleteLists([self.gl_list])
+    def __del__(self):
+        if self.vbo_vertices:
+            self.vbo_vertices.delete()
+        if self.vbo_normals:
+            self.vbo_normals.delete()
+        if self.vbo_texcoords:
+            self.vbo_texcoords.delete()
+        if self.gl_list:
+            try:
+                glDeleteLists(self.gl_list, 1)
+            except OpenGL.error.GLError:
+                pass

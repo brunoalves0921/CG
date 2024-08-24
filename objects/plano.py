@@ -3,14 +3,16 @@ from OpenGL.GL import *
 from PIL import Image
 import numpy as np
 
-class HalfSphere(Object):
+class Plane(Object):
     def __init__(self, position=None, rotation=None, scale=None, texture=None):
         super().__init__(position)
         self.transform.rotation = rotation if rotation is not None else [0, 0, 0]
         self.transform.scale = scale if scale is not None else [1, 1, 1]
         self.selected = False
-        self.vertices, self.normals, self.uvs = self.generate_hemisphere(32, 32)
-        self.faces = self.generate_faces(32, 32)
+        self.vertices = self.generate_vertices()
+        self.faces = self.generate_faces()
+        self.uvs = self.generate_uvs()
+        self.normals = self.calculate_normals()
         self.texture = texture
         self.texture_id = None
         self.texture_loaded = False
@@ -19,58 +21,39 @@ class HalfSphere(Object):
         self.vbo_vertices = glGenBuffers(1)
         self.vbo_faces = glGenBuffers(1)
         self.vbo_uvs = glGenBuffers(1)
-        self.vbo_normals = glGenBuffers(1)
+        self.vbo_normals = glGenBuffers(1)  # Inicialização do VBO para as normais
 
         self.init_vbo()
-
+        
         if self.texture:
-            self.load_texture(self.texture)
+            self.load_texture(self.texture)  # Carrega a textura se o caminho estiver disponível
 
-    def generate_hemisphere(self, slices, stacks):
-        vertices = []
-        normals = []
-        uvs = []
+    def get_center(self):
+        return self.position
 
-        for i in range(stacks + 1):
-            theta = i * np.pi / stacks
-            sin_theta = np.sin(theta)
-            cos_theta = np.cos(theta)
+    def generate_vertices(self):
+        vertices = [
+            [-1, 0, -1],
+            [1, 0, -1],
+            [1, 0, 1],
+            [-1, 0, 1]
+        ]
+        return np.array(vertices, dtype=np.float32)
 
-            for j in range(slices + 1):
-                phi = j * 2 * np.pi / slices
-                sin_phi = np.sin(phi)
-                cos_phi = np.cos(phi)
-
-                x = cos_phi * sin_theta
-                y = cos_theta
-                z = sin_phi * sin_theta
-                u = 1 - (j / slices)
-                v = 1 - (i / stacks)
-
-                # Gerar vértices apenas para a metade superior da esfera
-                if y >= 0:
-                    vertices.append([x, y, z])
-                    normals.append([x, y, z])
-                    uvs.append([u, v])
-
-        vertices = np.array(vertices, dtype=np.float32)
-        normals = np.array(normals, dtype=np.float32)
-        uvs = np.array(uvs, dtype=np.float32)
-
-        return vertices, normals, uvs
-
-    def generate_faces(self, slices, stacks):
-        faces = []
-
-        for i in range(stacks):
-            for j in range(slices):
-                v1 = i * (slices + 1) + j
-                v2 = v1 + slices + 1
-                # Adicionar faces apenas para vértices na metade superior
-                if v2 < len(self.vertices) and v1 < len(self.vertices):
-                    faces.append((v1, v2, v2 + 1, v1 + 1))
-
+    def generate_faces(self):
+        faces = [
+            (0, 1, 2, 3)
+        ]
         return np.array(faces, dtype=np.uint32)
+
+    def generate_uvs(self):
+        uvs = [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1]
+        ]
+        return np.array(uvs, dtype=np.float32)
 
     def init_vbo(self):
         # Upload vertices to VBO
@@ -89,44 +72,47 @@ class HalfSphere(Object):
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)
         glBufferData(GL_ARRAY_BUFFER, self.normals.nbytes, self.normals, GL_STATIC_DRAW)
 
+    def calculate_normals(self):
+        normals = np.array([[0, 1, 0]] * 4, dtype=np.float32)
+        return normals
+
     def draw(self, is_shadow=False):
         glPushMatrix()
         glTranslatef(*self.position)
-
+        
         glRotatef(self.transform.rotation[0], 1, 0, 0)
         glRotatef(self.transform.rotation[1], 0, 1, 0)
         glRotatef(self.transform.rotation[2], 0, 0, 1)
 
         glScalef(*self.transform.scale)
 
+        # Armazena a cor anterior
         previous_color = glGetFloatv(GL_CURRENT_COLOR)
-        if not is_shadow:
-            glColor3f(1.0, 1.0, 1.0)
-        else:
-            glColor3f(0.0, 0.0, 0.0)  # Cor preta para a sombra
         
-        if not is_shadow and self.selected:
-            glColor3f(1.0, 0.5, 0.0)  # Cor laranja para o objeto selecionado
+        if self.selected:
+            glColor3f(1.0, 0.5, 0.0)
+        else:
+            glColor3f(*previous_color[:3])  # Restaurar a cor anterior, caso não esteja selecionado
 
         if self.texture_id:
             glEnable(GL_TEXTURE_2D)
             glBindTexture(GL_TEXTURE_2D, self.texture_id)
 
         glEnableClientState(GL_VERTEX_ARRAY)
-        glEnableClientState(GL_NORMAL_ARRAY)
+        glEnableClientState(GL_NORMAL_ARRAY)  # Habilita o uso de normais
         glEnableClientState(GL_TEXTURE_COORD_ARRAY)
 
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_vertices)
         glVertexPointer(3, GL_FLOAT, 0, None)
 
-        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_normals)  # Usa o VBO de normais
         glNormalPointer(GL_FLOAT, 0, None)
 
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_uvs)
         glTexCoordPointer(2, GL_FLOAT, 0, None)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vbo_faces)
-        glDrawElements(GL_QUADS, self.faces.size, GL_UNSIGNED_INT, None)
+        glDrawElements(GL_QUADS, 4, GL_UNSIGNED_INT, ctypes.c_void_p(0))
 
         glDisableClientState(GL_VERTEX_ARRAY)
         glDisableClientState(GL_NORMAL_ARRAY)
@@ -142,7 +128,7 @@ class HalfSphere(Object):
 
     def to_dict(self):
         return {
-            'type': 'halfsphere',
+            'type': 'plane',
             'position': self.position,
             'rotation': self.transform.rotation,
             'scale': self.transform.scale,
@@ -154,16 +140,16 @@ class HalfSphere(Object):
         position = data['position']
         rotation = data['rotation']
         scale = data['scale']
-        texture = data.get('texture')
+        texture = data.get('texture')  # Usar get para evitar KeyError caso a chave não exista
         return cls(position=position, rotation=rotation, scale=scale, texture=texture)
 
     def load_texture(self, file_path):
         try:
             image = Image.open(file_path)
-            image = image.convert("RGBA")
+            image = image.convert("RGBA")  # Garantir que a imagem tenha um canal alpha
             image_data = np.array(image, dtype=np.uint8)
 
-            mode = GL_RGBA
+            mode = GL_RGBA  # Usar GL_RGBA para texturas com canal alpha
 
             if self.texture_id:
                 glDeleteTextures([self.texture_id])
@@ -179,6 +165,7 @@ class HalfSphere(Object):
             self.texture_loaded = True
             self.texture = file_path
 
+            # Configura o blending para suportar transparência
             glEnable(GL_BLEND)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
@@ -186,6 +173,15 @@ class HalfSphere(Object):
             print(f"Textura não encontrada: {file_path}")
         except Exception as e:
             print(f"Erro ao carregar textura: {e}")
+
+
+    def rotate(self, angle, axis):
+        if axis == (1, 0, 0):
+            self.transform.rotation[0] += angle
+        elif axis == (0, 1, 0):
+            self.transform.rotation[1] += angle
+        elif axis == (0, 0, 1):
+            self.transform.rotation[2] += angle
 
     def scale(self, factor, axis):
         min_scale = 0.05

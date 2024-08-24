@@ -75,7 +75,7 @@ class Cone(Object):
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo_tex_coords)
         glBufferData(GL_ARRAY_BUFFER, self.tex_coords.nbytes, self.tex_coords, GL_STATIC_DRAW)
 
-    def draw(self):
+    def draw(self, is_shadow=False):
         glPushMatrix()
         glTranslatef(*self.position)
         
@@ -85,10 +85,16 @@ class Cone(Object):
 
         glScalef(*self.scale_factor)
         
-        if self.selected:
-            glColor3f(1.0, 0.5, 0.0)
+        previous_color = glGetFloatv(GL_CURRENT_COLOR)
+        if not is_shadow:
+            # Define a cor branca somente se não for sombra
+            glColor3f(1.0, 1.0, 1.0)
         else:
-            glColor3f(0.5, 0.5, 0.5)
+            # Para a sombra, você pode definir uma cor específica ou uma cor de sombra
+            glColor3f(0.0, 0.0, 0.0)  # Cor preta para a sombra
+        
+        if not is_shadow and self.selected:
+            glColor3f(1.0, 0.5, 0.0)  # Aplica a cor laranja somente se selecionado e não for sombra
         
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_NORMAL_ARRAY)
@@ -116,6 +122,9 @@ class Cone(Object):
         if self.texture_id:
             glDisable(GL_TEXTURE_2D)
             glDisableClientState(GL_TEXTURE_COORD_ARRAY)
+
+        #Restaura a cor anterior
+        glColor3f(*previous_color[:3])
 
         glPopMatrix()
 
@@ -166,47 +175,35 @@ class Cone(Object):
             self.position[2] += distance
 
     def load_texture(self, file_path):
-        if not self.texture_loaded:
-            try:
-                # Carrega a imagem
-                image = Image.open(file_path)
-                # Converte a imagem para RGB (no caso de imagens em outros formatos)
-                image = image.convert("RGB")
-                # Obtém dados da imagem
-                image_data = np.array(image, dtype=np.uint8)
-                
-                # Verifica se a textura já foi carregada
-                if self.texture_id:
-                    glDeleteTextures([self.texture_id])
-                
-                # Gera e vincula a nova textura
-                self.texture_id = glGenTextures(1)
-                glBindTexture(GL_TEXTURE_2D, self.texture_id)
-                
-                # Define os parâmetros da textura
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-                
-                # Carrega a imagem para a textura
-                glTexImage2D(
-                    GL_TEXTURE_2D, 
-                    0, 
-                    GL_RGB, 
-                    image.width, 
-                    image.height, 
-                    0, 
-                    GL_RGB, 
-                    GL_UNSIGNED_BYTE, 
-                    image_data
-                )
-                
-                # Marca a textura como carregada
-                self.texture_loaded = True
-                self.texture = file_path
-            except Exception as e:
-                print(f"Erro ao carregar textura: {e}")
+        try:
+            image = Image.open(file_path)
+            image = image.convert("RGBA")  # Garantir que a imagem tenha um canal alpha
+            image_data = np.array(image, dtype=np.uint8)
+
+            mode = GL_RGBA  # Usar GL_RGBA para texturas com canal alpha
+
+            if self.texture_id:
+                glDeleteTextures([self.texture_id])
+
+            self.texture_id = glGenTextures(1)
+            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+            glTexImage2D(GL_TEXTURE_2D, 0, mode, image.width, image.height, 0, mode, GL_UNSIGNED_BYTE, image_data)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+
+            self.texture_loaded = True
+            self.texture = file_path
+
+            # Configura o blending para suportar transparência
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        except FileNotFoundError:
+            print(f"Textura não encontrada: {file_path}")
+        except Exception as e:
+            print(f"Erro ao carregar textura: {e}")
 
     def generate_texture_coords(self):
         tex_coords = []
