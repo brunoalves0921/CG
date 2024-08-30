@@ -1,4 +1,5 @@
 from utils.transform import Transform
+from OpenGL.GL import *
 
 
 class Object:

@@ -4,7 +4,7 @@ from PIL import Image
 import numpy as np
 
 class Plane(Object):
-    def __init__(self, position=None, rotation=None, scale=None, texture=None):
+    def __init__(self, position=[0,0,0], rotation=None, scale=None, texture=None):
         super().__init__(position)
         self.transform.rotation = rotation if rotation is not None else [0, 0, 0]
         self.transform.scale = scale if scale is not None else [1, 1, 1]
@@ -86,17 +86,16 @@ class Plane(Object):
 
         glScalef(*self.transform.scale)
 
-        # Armazena a cor anterior
         previous_color = glGetFloatv(GL_CURRENT_COLOR)
-        
-        if self.selected:
-            glColor3f(1.0, 0.5, 0.0)
+        if not is_shadow:
+            # Define a cor branca somente se não for sombra
+            glColor3f(1.0, 1.0, 0.0)
         else:
-            glColor3f(*previous_color[:3])  # Restaurar a cor anterior, caso não esteja selecionado
-
-        if self.texture_id:
-            glEnable(GL_TEXTURE_2D)
-            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+            # Para a sombra, você pode definir uma cor específica ou uma cor de sombra
+            glColor3f(0.0, 0.0, 0.0)  # Cor preta para a sombra
+        
+        if not is_shadow and self.selected:
+            glColor3f(1.0, 0.5, 0.0)  # Aplica a cor laranja somente se selecionado e não for sombra
 
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_NORMAL_ARRAY)  # Habilita o uso de normais

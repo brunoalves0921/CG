@@ -132,7 +132,7 @@ class Scene:
         else:
             print(f"Unknown object type: {object_type}")
             return
-
+        
         obj.position = [0, 0, 0]
         obj.init_vbo()
         self.objects.append(obj)
@@ -163,33 +163,67 @@ class Scene:
         self.sunlight_enabled = not self.sunlight_enabled
 
     def render_shadows(self):
+        if not any(isinstance(obj, LightSphere) for obj in self.objects) and not self.sunlight_enabled:
+            return  # Não renderiza sombras se não houver nenhuma luz na cena
+
         glPushAttrib(GL_LIGHTING_BIT | GL_TEXTURE_BIT)  # Salva o estado das configurações de iluminação e texturas
         glDisable(GL_LIGHTING)  # Desativa a iluminação
         glDisable(GL_TEXTURE_2D)  # Desativa texturas
 
-        glColor3f(0.0, 0.0, 0.0)  # Define a cor da sombra como preta
+        lights = [obj for obj in self.objects if isinstance(obj, LightSphere)]
+        if self.sunlight_enabled:
+            sunlight_dir = self.sunlight_position[:3]  # Obtenha a direção do Sunlight
+            lights.append(('Sunlight', sunlight_dir))
 
-        light_dir = self.sunlight_position[:3]
-        light_dir = [d / (sum(light_dir) ** 0.5) for d in light_dir]  # Normaliza a direção da luz
+        for light in lights:
+            if isinstance(light, tuple) and light[0] == 'Sunlight':
+                # Usa a direção do Sunlight sem modificação
+                light_dir = light[1]
+            else:
+                # Para LightSphere, calcula a direção da luz com base na posição relativa entre a luz e o objeto
+                light_pos = light.position[:3]
 
-        shadow_matrix = [
-            1, 0, 0, 0,
-            -light_dir[0], 0, -light_dir[2], 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-        ]
+            for obj in self.objects:
+                if isinstance(obj, Plane) or isinstance(obj, LightSphere):
+                    continue  # Pula a renderização da sombra para objetos do tipo Plane e LightSphere
 
-        for obj in self.objects:
-            if isinstance(obj, Plane) or isinstance(obj, LightSphere):
-                continue  # Pula a renderização da sombra para objetos do tipo Plane
+                # Posição do objeto
+                obj_pos = obj.position[:3]
 
-            glPushMatrix()
-            glTranslatef(0, 0.01, 0)  # Adiciona uma pequena translação vertical para levantar a sombra
-            glMultMatrixf(shadow_matrix)  # Aplica a matriz de sombra
+                if isinstance(light, LightSphere):
+                    # Para LightSphere, calcula a direção da luz do LightSphere para o objeto
+                    light_dir = [obj_pos[i] - light_pos[i] for i in range(3)]
+                    # Inverta a direção da luz para que as sombras apontem na direção oposta à luz
+                    light_dir = [-d for d in light_dir]
+                elif isinstance(light, tuple) and light[0] == 'Sunlight':
+                    # Mantém a direção original para o Sunlight, não inverte
+                    light_dir = sunlight_dir
 
-            obj.draw(is_shadow=True)  # Desenha o objeto como sombra
+                # Verifica se a soma das componentes é diferente de zero antes de normalizar
+                magnitude = sum([d**2 for d in light_dir]) ** 0.5
+                if magnitude != 0:
+                    light_dir = [d / magnitude for d in light_dir]  # Normaliza a direção da luz
+                else:
+                    # Define uma direção padrão caso a direção da luz seja zero
+                    light_dir = [0, -1, 0]  # Exemplo: luz apontando para baixo
 
-            glPopMatrix()
+                # Limita os valores de light_dir para evitar problemas de overflow ou sombras longe demais
+                light_dir = [max(min(d, 1.0), -1.0) for d in light_dir]
+
+                shadow_matrix = [
+                    1, 0, 0, 0,
+                    -light_dir[0], 0, -light_dir[2], 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1
+                ]
+
+                glPushMatrix()
+                glTranslatef(0, 0.01, 0)  # Adiciona uma pequena translação vertical para levantar a sombra
+                glMultMatrixf(shadow_matrix)  # Aplica a matriz de sombra
+
+                obj.draw(is_shadow=True)  # Desenha o objeto como sombra
+
+                glPopMatrix()
 
         glPopAttrib()  # Restaura o estado das configurações de iluminação e texturas
 

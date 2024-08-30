@@ -4,8 +4,8 @@ import numpy as np
 from PIL import Image
 
 class Cone(Object):
-    def __init__(self, base_radius=1, height=2, slices=20, texture=None):
-        super().__init__([0, 0, 0])
+    def __init__(self, position=[0,0,0], base_radius=1, height=2, slices=20, texture=None):
+        super().__init__(position)
         self.selected = False
         self.base_radius = base_radius
         self.height = height

@@ -9,7 +9,7 @@ class LightSphere(Object):
     available_light_ids = [GL_LIGHT0 + i for i in range(7)]
 
     def __init__(self, radius=0.2, intensity=10.0, color=(1.0, 1.0, 1.0), slices=16, stacks=16):
-        super().__init__([0, 0, 0])
+        super().__init__([0, 2, 0])  # Altere a posição inicial para (0, 2, 0)
         self.radius = radius
         self.intensity = intensity
         self.color = color
@@ -37,6 +37,7 @@ class LightSphere(Object):
 
         # Configure the light on creation
         self.update_light()
+
 
     def create_sphere(self, radius, slices, stacks):
         vertices = []
@@ -95,17 +96,20 @@ class LightSphere(Object):
     def set_selected(self, selected):
         self.selected = selected
 
-    def draw(self):
+    def draw(self, is_shadow=False):
         glPushMatrix()
         glTranslatef(*self.position)    
 
-        # Armazena a cor anterior
         previous_color = glGetFloatv(GL_CURRENT_COLOR)
-
-        if self.selected:
-            glColor3f(1.0, 0.5, 0.0)
+        if not is_shadow:
+            # Define a cor branca somente se não for sombra
+            glColor3f(1.0, 1.0, 1.0)
         else:
-            glColor3f(*previous_color[:3])  # Restaurar a cor anterior, caso não esteja selecionado
+            # Para a sombra, você pode definir uma cor específica ou uma cor de sombra
+            glColor3f(0.0, 0.0, 0.0)  # Cor preta para a sombra
+        
+        if not is_shadow and self.selected:
+            glColor3f(1.0, 0.5, 0.0)  # Aplica a cor laranja somente se selecionado e não for sombra
 
         # Draw the sphere using the GLU function
         quadric = gluNewQuadric()

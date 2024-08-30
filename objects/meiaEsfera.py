@@ -4,7 +4,7 @@ from PIL import Image
 import numpy as np
 
 class HalfSphere(Object):
-    def __init__(self, position=None, rotation=None, scale=None, texture=None):
+    def __init__(self, position=[0,0,0], rotation=None, scale=None, texture=None):
         super().__init__(position)
         self.transform.rotation = rotation if rotation is not None else [0, 0, 0]
         self.transform.scale = scale if scale is not None else [1, 1, 1]

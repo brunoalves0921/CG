@@ -4,8 +4,8 @@ from PIL import Image
 import numpy as np
 
 class Pyramid(Object):
-    def __init__(self, position=None, rotation=None, scale=None, texture=None):
-        super().__init__(position if position else [0, 0, 0])  # Ajusta a posição inicial para [0, 0, 0] por padrão
+    def __init__(self, position=[0,0,0], rotation=None, scale=None, texture=None):
+        super().__init__(position)  # Ajusta a posição inicial para [0, 0, 0] por padrão
         self.transform.rotation = rotation if rotation is not None else [0, 0, 0]
         self.transform.scale = scale if scale is not None else [1, 1, 1]
         self.selected = False
