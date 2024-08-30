@@ -132,8 +132,9 @@ class Scene:
         else:
             print(f"Unknown object type: {object_type}")
             return
-        
         obj.position = [0, 0, 0]
+        if object_type == 'light':
+            obj.position = [0, 2, 0]
         obj.init_vbo()
         self.objects.append(obj)
 
@@ -298,7 +299,7 @@ class Scene:
     def draw_overview(self):
         # Salva o estado atual do OpenGL, incluindo viewport e outros atributos
         glPushAttrib(GL_VIEWPORT_BIT | GL_TRANSFORM_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT)
-
+        
         # Dimensões da janela de overview
         width, height = self.display
         overview_width = 320
@@ -325,14 +326,20 @@ class Scene:
         glVertex2f(overview_x - 5, overview_y + overview_height + 5)
         glEnd()
 
+        # Restaura as matrizes de projeção e modelview
         glPopMatrix()
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
 
-        # Configura a viewport para a janela de overview
+        # Configura a viewport e o scissor para a janela de overview
         glViewport(overview_x, overview_y, overview_width, overview_height)
+        glEnable(GL_SCISSOR_TEST)
+        glScissor(overview_x, overview_y, overview_width, overview_height)
+        
+        # Limpa o buffer de cor e profundidade apenas na área do viewport
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        # Habilita o teste de profundidade
+        # Habilita o teste de profundidade para o rendering do viewport
         glEnable(GL_DEPTH_TEST)
 
         # Configurações de projeção para o overview
@@ -366,6 +373,9 @@ class Scene:
         glPopMatrix()
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
+
+        # Desativa o teste de scissor
+        glDisable(GL_SCISSOR_TEST)
 
         # Restaura o estado salvo do OpenGL
         glPopAttrib()
