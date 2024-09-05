@@ -1,5 +1,5 @@
 import pygame
-from pygame.locals import KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t, K_c, K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_o, K_p, K_l, K_DELETE, K_ESCAPE, K_s
+from pygame.locals import KMOD_CTRL, KMOD_SHIFT, KMOD_ALT, K_r, K_t, K_c, K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_o, K_p, K_m, K_l, K_DELETE, K_ESCAPE, K_s
 from OpenGL.GL import *
 from objects.mesh.mesh import Mesh
 
@@ -47,8 +47,16 @@ class EventListener:
         elif event.key == K_o:
             self.scene.show_overview = not self.scene.show_overview
             self.overview_active = self.scene.show_overview
-        elif event.key == K_p:  # Tecla 'P' para alternar a visibilidade da Sidebar
+        elif event.key == K_m:  # Tecla 'm' para alternar a visibilidade da Sidebar
             self.scene.sidebar.toggle_visibility()
+        elif event.key == pygame.K_p:
+            # Alterna o modo de projeção
+            if self.scene.projection_mode == 'perspective':
+                self.scene.projection_mode = 'orthographic'
+            elif self.scene.projection_mode == 'orthographic':
+                self.scene.projection_mode = 'oblique'
+            else:
+                self.scene.projection_mode = 'perspective'
         elif event.key == K_l:  # Tecla 'L' para alternar a iluminação solar
             self.scene.toggle_sunlight()
         elif event.key == K_s:  # Tecla 'S' para alternar a renderização das sombras
@@ -131,7 +139,7 @@ class EventListener:
                 if obj.selected:
                     self.apply_transformations(obj, value_rotate, value_translate, value_scale, min_scale, ctrl_pressed, shift_pressed, alt_pressed)
         else:
-            self.scene.camera.zoom += 0.5 * direction
+            self.scene.camera.zoom += 1.0 * direction
 
     def apply_transformations(self, obj, value_rotate, value_translate, value_scale, min_scale, ctrl_pressed, shift_pressed, alt_pressed):
         if self.shear_mode and ctrl_pressed:

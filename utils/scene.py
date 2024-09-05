@@ -15,6 +15,7 @@ class Scene:
     def __init__(self, message_queue):
         self.objects = []
         self.message_queue = message_queue
+        self.projection_mode = 'perspective'  # Modos disponíveis: 'perspective', 'orthographic', 'oblique'
         pygame.init()
         self.display = (1620, 830)
         pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLESAMPLES, 4)  # Enable MSAA
@@ -237,7 +238,20 @@ class Scene:
         # Configuração da projeção para a cena principal
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
+        if self.projection_mode == 'perspective':
+            gluPerspective(45, (self.display[0] / self.display[1]), 0.1, 10000.0)
+        elif self.projection_mode == 'orthographic':
+            glOrtho(-10, 10, -10, 10, 0.1, 10000.0)
+        elif self.projection_mode == 'oblique':
+            glOrtho(-10, 10, -10, 10, 0.1, 10000.0)
+            shear_matrix = [
+                1, 0.5, 0, 0,
+                0.5, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            ]
+            glMultMatrixf(shear_matrix)
+
         
         # Configurações da câmera principal
         glMatrixMode(GL_MODELVIEW)
