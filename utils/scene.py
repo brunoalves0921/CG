@@ -17,7 +17,7 @@ class Scene:
         self.message_queue = message_queue
         self.projection_mode = 'perspective'  # Modos disponíveis: 'perspective', 'orthographic', 'oblique'
         pygame.init()
-        self.display = (1620, 830)
+        self.display = (1200, 800)
         pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLESAMPLES, 4)  # Enable MSAA
         pygame.display.gl_set_attribute(pygame.GL_ACCELERATED_VISUAL, 1)  # Enable hardware acceleration
         pygame.display.gl_set_attribute(pygame.GL_DOUBLEBUFFER, 1)  # Enable double buffering
@@ -244,13 +244,15 @@ class Scene:
             glOrtho(-10, 10, -10, 10, 0.1, 10000.0)
         elif self.projection_mode == 'oblique':
             glOrtho(-10, 10, -10, 10, 0.1, 10000.0)
+            # glTranslatef(0,0,-0.1)
             shear_matrix = [
-                1, 0.5, 0, 0,
-                0.5, 1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1
+                1, 0,  0.5, 0,
+                0, 1, -0.5, 0,
+                0, 0,    1, 0,
+                0, 0,    0, 1
             ]
-            glMultMatrixf(shear_matrix)
+            glMultTransposeMatrixf(shear_matrix)
+            # glTranslatef(0,0,0.1);
 
         
         # Configurações da câmera principal
