@@ -71,11 +71,14 @@ Este guia descreve os comandos de teclado e mouse utilizados no EventListener pa
   - Soltar: Desativa o modo de cisalhamento.
 - **F1 a F6 - Posições de Predefinição**
   - Pressionar: Define a posição da câmera para uma das predefinições configuradas.
-- **O - Visão Geral**
-  - Pressionar: Alterna a tela de visão geral.
-  - Pressionar novamente: Desabilita a tela.
-- **P - Visibilidade da Barra Lateral**
-  - Pressionar: Alterna a visibilidade da barra lateral.
+- **O - View Port**
+  - Pressionar: Habilita/Desabilita a viewport.
+- **M - Visibilidade do menu de criação**
+  - Pressionar: Habilita/Desabilita o menu interativo.
+- **P - Projeções**
+  - Pressionar: Alterna entre os modos de projeções (Perspectiva / Ortográfica / Oblíqua).
+- **L - Sombras**
+  - Pressionar: Habilita/Desabilita a visualização das sombras em planos.
 - **DELETE - Deletar Objeto Selecionado**
   - Pressionar: Deleta o objeto atualmente selecionado na cena.
 
@@ -115,6 +118,3 @@ Jorge Bruno Costa Alves
 
 Universidade Federal do Ceará - Campus Quixadá.
 
-## Créditos
-
-Agradecimentos especiais ao desenvolvedor [@jva411](https://github.com/jva411) que me auxiliou na explicação de diversas dúvidas durante o projeto.
