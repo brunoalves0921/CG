@@ -84,15 +84,14 @@ Este guia descreve os comandos de teclado e mouse utilizados no EventListener pa
 
 ### Comandos de Mouse
 
-- **Botão Esquerdo (1)**
-  - Pressionar: Seleciona um objeto na cena. Se Shift estiver pressionado, permite múltipla seleção.
-  - Soltar: Libera o objeto selecionado.
-- **Botão Direito (3)**
+- **Botão Esquerdo**
+  - Pressionar: Seleciona / Desceleciona um objeto na cena. Se Shift estiver pressionado, permite múltipla seleção.
+- **Botão Direito**
   - Pressionar: Inicia a movimentação da câmera.
   - Soltar: Para a movimentação da câmera.
-- **Scroll (4 e 5)**
-  - Rolar para cima (4): Aproxima a câmera ou aplica transformação (rotação, translação, escala) no objeto selecionado.
-  - Rolar para baixo (5): Afasta a câmera ou aplica transformação (rotação, translação, escala) no objeto selecionado.
+- **Scroll **
+  - Rolar para cima: Aproxima a câmera ou aplica transformação (rotação, translação, escala) no objeto selecionado.
+  - Rolar para baixo: Afasta a câmera ou aplica transformação (rotação, translação, escala) no objeto selecionado.
 
 ### Modificadores de Teclado
 
