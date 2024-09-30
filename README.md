@@ -35,7 +35,7 @@ O projeto requer as seguintes dependências:
 - Python 3.x
 - PyOpenGL
 - NumPy
-- GLFW
+- PyGame
 
 Certifique-se de ter essas dependências instaladas em seu ambiente antes de executar o projeto.
 
