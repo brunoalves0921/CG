@@ -54,6 +54,23 @@ Para executar o projeto, siga as etapas abaixo:
 - **Interação do Usuário**: Permite ao usuário manipular os objetos através do teclado e mouse.
 - **Carregamento de Arquivos OBJ**: Suporta o carregamento e visualização de modelos 3D a partir de arquivos OBJ.
 
+## Imagens do Projeto
+
+### Sombras
+[![Sombras](sombras.png)](sombras.png)
+
+### Textura
+[![Textura](texture.png)](textura.png)
+
+### Luz
+[![Luz](light.png)](luz.png)
+
+### Menu
+[![Menu](menu.png)](menu.png)
+
+### Viewport
+[![Viewport](viewport.png)](viewport.png)
+
 ## Guia de Comandos do EventListener
 
 Este guia descreve os comandos de teclado e mouse utilizados no EventListener para interagir com a cena.
