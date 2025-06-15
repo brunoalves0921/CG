@@ -99,7 +99,7 @@
             "type": "sphere",
             "position": [
                 0,
-                3.4000000000000017,
+                2.1,
                 0
             ],
             "rotation": [
@@ -113,28 +113,12 @@
                 1
             ],
             "texture": null
-        },
-        {
-            "type": "light_sphere",
-            "position": [
-                -0.09999999999999937,
-                11.799999999999974,
-                -12.599999999999971
-            ],
-            "radius": 0.2,
-            "intensity": 10.0,
-            "color": [
-                1.0,
-                1.0,
-                1.0
-            ],
-            "selected": false
         }
     ],
     "camera": {
         "rotation": [
-            43,
-            -18824
+            16,
+            -19331
         ],
         "zoom": -53.0,
         "position": [
